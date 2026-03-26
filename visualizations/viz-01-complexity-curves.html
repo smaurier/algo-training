@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualisation — Courbes de complexité</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',Tahoma,sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;padding:2rem 1rem}
+    .container{max-width:900px;margin:0 auto}
+    h1{text-align:center;margin-bottom:.5rem;color:#fff}
+    .subtitle{text-align:center;color:#8892b0;margin-bottom:1.5rem}
+    canvas{background:#0d1117;border-radius:12px;border:1px solid #30363d;display:block;margin:0 auto 1.5rem}
+    .controls{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.5rem}
+    .controls label{display:flex;align-items:center;gap:.4rem;font-size:.9rem;cursor:pointer}
+    .controls input[type=checkbox]{accent-color:#0d6efd;width:16px;height:16px}
+    .slider-group{text-align:center;margin-bottom:1rem}
+    .slider-group input[type=range]{width:300px;accent-color:#4dabf7}
+    .legend{display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;font-size:.85rem}
+    .legend span{display:flex;align-items:center;gap:.3rem}
+    .dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Courbes de complexité</h1>
+    <p class="subtitle">Visualisez comment O(1), O(log n), O(n), O(n log n), O(n²) et O(2ⁿ) croissent</p>
+    <div class="slider-group">
+      <label>n max = <strong id="nLabel">50</strong></label><br>
+      <input type="range" id="nSlider" min="10" max="200" value="50">
+    </div>
+    <canvas id="chart" width="860" height="500"></canvas>
+    <div class="controls" id="toggles"></div>
+  </div>
+  <script>
+    const canvas = document.getElementById('chart');
+    const ctx = canvas.getContext('2d');
+    const slider = document.getElementById('nSlider');
+    const nLabel = document.getElementById('nLabel');
+
+    const complexities = [
+      { name: 'O(1)',       fn: () => 1,                   color: '#22c55e', active: true },
+      { name: 'O(log n)',   fn: n => Math.log2(n),         color: '#06b6d4', active: true },
+      { name: 'O(n)',       fn: n => n,                    color: '#3b82f6', active: true },
+      { name: 'O(n log n)', fn: n => n * Math.log2(n),     color: '#eab308', active: true },
+      { name: 'O(n²)',      fn: n => n * n,                color: '#f97316', active: true },
+      { name: 'O(2ⁿ)',      fn: n => Math.pow(2, n),       color: '#ef4444', active: true },
+    ];
+
+    // Create toggles
+    const togglesDiv = document.getElementById('toggles');
+    complexities.forEach((c, i) => {
+      const label = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = true;
+      cb.addEventListener('change', () => { c.active = cb.checked; draw(); });
+      const dot = document.createElement('span');
+      dot.className = 'dot'; dot.style.background = c.color;
+      label.appendChild(cb); label.appendChild(dot);
+      label.appendChild(document.createTextNode(' ' + c.name));
+      togglesDiv.appendChild(label);
+    });
+
+    function draw() {
+      const W = canvas.width, H = canvas.height;
+      const pad = { top: 30, right: 30, bottom: 50, left: 70 };
+      const plotW = W - pad.left - pad.right;
+      const plotH = H - pad.top - pad.bottom;
+      const nMax = parseInt(slider.value);
+
+      ctx.clearRect(0, 0, W, H);
+
+      // Find max Y (cap at reasonable value)
+      let maxY = 0;
+      const activeComps = complexities.filter(c => c.active);
+      for (const c of activeComps) {
+        for (let n = 1; n <= nMax; n++) {
+          const v = c.fn(n);
+          if (isFinite(v) && v < 1e8) maxY = Math.max(maxY, v);
+        }
+      }
+      if (maxY === 0) maxY = 1;
+
+      // Axes
+      ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, pad.top);
+      ctx.lineTo(pad.left, H - pad.bottom);
+      ctx.lineTo(W - pad.right, H - pad.bottom);
+      ctx.stroke();
+
+      // Axis labels
+      ctx.fillStyle = '#8892b0'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('n', W / 2, H - 10);
+      ctx.save(); ctx.translate(15, H / 2); ctx.rotate(-Math.PI / 2);
+      ctx.fillText('opérations', 0, 0); ctx.restore();
+
+      // Tick marks
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      for (let i = 0; i <= 5; i++) {
+        const n = Math.round(nMax * i / 5);
+        const x = pad.left + (n / nMax) * plotW;
+        ctx.fillStyle = '#8892b0';
+        ctx.fillText(n.toString(), x, H - pad.bottom + 8);
+        ctx.strokeStyle = '#1e293b'; ctx.beginPath();
+        ctx.moveTo(x, pad.top); ctx.lineTo(x, H - pad.bottom); ctx.stroke();
+      }
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      for (let i = 0; i <= 4; i++) {
+        const v = maxY * i / 4;
+        const y = H - pad.bottom - (v / maxY) * plotH;
+        ctx.fillStyle = '#8892b0';
+        ctx.fillText(v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v.toFixed(0), pad.left - 8, y);
+        ctx.strokeStyle = '#1e293b'; ctx.beginPath();
+        ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+      }
+
+      // Draw curves
+      for (const c of activeComps) {
+        ctx.strokeStyle = c.color; ctx.lineWidth = 2.5; ctx.beginPath();
+        let started = false;
+        for (let n = 1; n <= nMax; n++) {
+          const v = c.fn(n);
+          if (!isFinite(v) || v > maxY * 1.1) break;
+          const x = pad.left + (n / nMax) * plotW;
+          const y = H - pad.bottom - (v / maxY) * plotH;
+          if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Label at end
+        let lastN = nMax;
+        for (let n = nMax; n >= 1; n--) {
+          if (isFinite(c.fn(n)) && c.fn(n) <= maxY * 1.1) { lastN = n; break; }
+        }
+        const lx = pad.left + (lastN / nMax) * plotW;
+        const ly = H - pad.bottom - (Math.min(c.fn(lastN), maxY) / maxY) * plotH;
+        ctx.fillStyle = c.color; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'left';
+        ctx.fillText(c.name, lx + 5, ly);
+      }
+    }
+
+    slider.addEventListener('input', () => { nLabel.textContent = slider.value; draw(); });
+    draw();
+  </script>
+</body>
+</html>

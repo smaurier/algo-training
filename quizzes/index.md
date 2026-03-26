@@ -1,17 +1,19 @@
-# Quizzes interactifs
+# Quizzes
 
-| Module | Quiz |
-|--------|------|
-| 00 | [Introduction](/quizzes/quiz-00-prerequis.html) |
-| 01 | [Complexité](/quizzes/quiz-01-complexite.html) |
-| 02 | [Tableaux & hash maps](/quizzes/quiz-02-tableaux-hashmaps.html) |
-| 03 | [Stacks & queues](/quizzes/quiz-03-stacks-queues.html) |
-| 04 | [Récursion & binary search](/quizzes/quiz-04-recursion-binary-search.html) |
-| 05 | [Tri & heaps](/quizzes/quiz-05-sorting-heaps.html) |
-| 06 | [Arbres](/quizzes/quiz-06-trees.html) |
-| 07 | [Graphes](/quizzes/quiz-07-graphs.html) |
-| 08 | [Backtracking](/quizzes/quiz-08-backtracking.html) |
-| 09 | [Dynamic programming](/quizzes/quiz-09-dynamic-programming.html) |
-| 10 | [Greedy & union-find](/quizzes/quiz-10-greedy-union-find.html) |
-| 11 | [Patterns JS](/quizzes/quiz-11-patterns-js.html) |
-| 12 | [Projet final](/quizzes/quiz-12-projet-final.html) |
+Chaque quiz contient **5 questions** interactives pour valider ta compréhension du module correspondant.
+
+| Quiz | Thème |
+|------|-------|
+| [Quiz 00](/quizzes/quiz-00-prerequis.html) | Prérequis & introduction |
+| [Quiz 01](/quizzes/quiz-01-complexite.html) | Complexité & raisonnement |
+| [Quiz 02](/quizzes/quiz-02-tableaux-hash.html) | Tableaux, chaînes, hash maps |
+| [Quiz 03](/quizzes/quiz-03-stacks-queues.html) | Stacks, queues, listes |
+| [Quiz 04](/quizzes/quiz-04-recursion.html) | Récursion & binary search |
+| [Quiz 05](/quizzes/quiz-05-tris-heaps.html) | Tri, partition, heaps |
+| [Quiz 06](/quizzes/quiz-06-arbres.html) | Arbres & BST |
+| [Quiz 07](/quizzes/quiz-07-graphes.html) | Graphes & parcours |
+| [Quiz 08](/quizzes/quiz-08-backtracking.html) | Backtracking |
+| [Quiz 09](/quizzes/quiz-09-dp.html) | Programmation dynamique |
+| [Quiz 10](/quizzes/quiz-10-greedy-uf-trie.html) | Greedy, Union-Find, Trie |
+| [Quiz 11](/quizzes/quiz-11-patterns-fullstack.html) | Patterns JS fullstack |
+| [Quiz 12](/quizzes/quiz-12-projet-final.html) | Projet final |

@@ -1,1 +1,139 @@
-<!doctype html><html lang="fr"><meta charset="utf-8"><title>Quiz 01</title><body><h1>Quiz 01 — Complexité</h1><ol><li>Pourquoi $O(n^2)$ devient vite problématique ?</li><li>Quand une `Map` vaut-elle mieux qu'un scan répété ?</li><li>Le Big-O mesure-t-il les constantes exactes ?</li></ol></body></html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz 01 — Complexité et Raisonnement</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a2e; color: #e0e0e0; min-height: 100vh; padding: 2rem 1rem; }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 0.5rem; font-size: 1.8rem; color: #ffffff; }
+    .subtitle { text-align: center; color: #8892b0; margin-bottom: 2rem; font-size: 1rem; }
+    .progress-bar-container { background: #0d1117; border-radius: 10px; height: 14px; margin-bottom: 2rem; overflow: hidden; }
+    .progress-bar { background: linear-gradient(90deg, #0d6efd, #4dabf7); height: 100%; width: 0%; border-radius: 10px; transition: width 0.4s ease; }
+    .progress-text { text-align: center; font-size: 0.9rem; color: #8892b0; margin-bottom: 1.5rem; }
+    .card { background: #16213e; border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .question-label { font-size: 0.85rem; color: #4dabf7; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+    .question-text { font-size: 1.15rem; margin-bottom: 1.2rem; line-height: 1.5; color: #ffffff; }
+    pre { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 1rem; margin-bottom: 1.2rem; overflow-x: auto; font-size: 0.95rem; }
+    code { font-family: 'Consolas', 'Fira Code', 'Courier New', monospace; color: #c9d1d9; }
+    .options { list-style: none; }
+    .options li { margin-bottom: 0.6rem; }
+    .options label { display: flex; align-items: center; gap: 0.75rem; padding: 0.8rem 1rem; background: #0d1117; border: 2px solid #30363d; border-radius: 8px; cursor: pointer; transition: border-color 0.2s, background 0.2s; font-size: 1rem; }
+    .options label:hover { border-color: #4dabf7; background: #1c2a4a; }
+    .options input[type="radio"] { accent-color: #0d6efd; width: 18px; height: 18px; flex-shrink: 0; }
+    .btn { display: inline-block; padding: 0.7rem 2rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.1s; }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: #0d6efd; color: #fff; }
+    .btn-primary:hover { background: #3b82f6; }
+    .btn-primary:disabled { background: #374151; cursor: not-allowed; }
+    .btn-restart { background: #0d6efd; color: #fff; margin-top: 1rem; }
+    .btn-restart:hover { background: #3b82f6; }
+    .feedback { margin-top: 1rem; padding: 1rem 1.2rem; border-radius: 8px; font-size: 0.95rem; line-height: 1.5; display: none; }
+    .feedback.correct { background: #0f5132; border: 1px solid #198754; color: #d1fae5; display: block; }
+    .feedback.wrong { background: #842029; border: 1px solid #dc3545; color: #fdd; display: block; }
+    .score-card { text-align: center; padding: 3rem 2rem; }
+    .score-card .score { font-size: 3rem; font-weight: 700; color: #4dabf7; margin-bottom: 0.5rem; }
+    .score-card .score-label { font-size: 1.2rem; color: #8892b0; margin-bottom: 1.5rem; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Quiz 01 — Complexité et Raisonnement</h1>
+    <p class="subtitle">Maîtrisez Big-O et l'analyse de complexité</p>
+    <div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
+    <p class="progress-text" id="progressText">Question 1 / 5</p>
+    <div id="quizContainer"></div>
+    <div id="scoreContainer" class="card score-card hidden"></div>
+  </div>
+  <script>
+    const questions = [
+      {
+        label: "Concept",
+        text: "Que mesure Big-O ?",
+        code: null,
+        options: [
+          "Le temps exact en millisecondes",
+          "La borne supérieure de croissance du temps/espace en fonction de la taille de l'entrée",
+          "Le nombre de lignes de code",
+          "La mémoire RAM utilisée en octets"
+        ],
+        answer: 1,
+        explanation: "Big-O décrit le comportement asymptotique : comment le temps ou l'espace croît quand n augmente, en ignorant les constantes et les termes inférieurs."
+      },
+      {
+        label: "Prédiction de code",
+        text: "Quelle est la complexité temporelle ?",
+        code: "function mystery(arr) {\n  for (let i = 0; i < arr.length; i++)\n    for (let j = i + 1; j < arr.length; j++)\n      if (arr[i] + arr[j] === 0) return true;\n  return false;\n}",
+        options: ["O(n)", "O(n log n)", "O(n²)", "O(2ⁿ)"],
+        answer: 2,
+        explanation: "Deux boucles imbriquées sur n éléments : la boucle externe fait n itérations, l'interne fait en moyenne n/2. Le produit donne O(n²)."
+      },
+      {
+        label: "Concept",
+        text: "Quelle complexité est la meilleure pour un algorithme de recherche dans un tableau trié ?",
+        code: null,
+        options: ["O(n)", "O(n²)", "O(log n)", "O(1)"],
+        answer: 2,
+        explanation: "La recherche binaire divise l'espace de recherche par 2 à chaque étape, donnant O(log n). O(1) n'est pas possible sans structure auxiliaire."
+      },
+      {
+        label: "Prédiction de code",
+        text: "Quelle est la complexité spatiale ?",
+        code: "function flatten(arr) {\n  const result = [];\n  for (const item of arr)\n    if (Array.isArray(item))\n      result.push(...flatten(item));\n    else\n      result.push(item);\n  return result;\n}",
+        options: ["O(1)", "O(n)", "O(n × d) où d = profondeur", "O(n²)"],
+        answer: 2,
+        explanation: "La récursion crée un frame par niveau de profondeur (d), et à chaque niveau les spreads copient des éléments. L'espace total est O(n × d) dans le pire cas."
+      },
+      {
+        label: "Pourquoi ?",
+        text: "Pourquoi O(n log n) est-il considéré comme optimal pour le tri par comparaison ?",
+        code: null,
+        options: [
+          "C'est la complexité de Array.sort()",
+          "Il est mathématiquement prouvé que tout tri par comparaison nécessite au minimum Ω(n log n) comparaisons",
+          "Les ordinateurs modernes ne peuvent pas faire mieux",
+          "C'est une convention de l'industrie"
+        ],
+        answer: 1,
+        explanation: "L'argument de l'arbre de décision montre que pour distinguer n! permutations, il faut log₂(n!) = Θ(n log n) comparaisons au minimum."
+      }
+    ];
+    let currentQuestion = 0, score = 0, answered = false;
+    function renderQuestion() {
+      answered = false;
+      const q = questions[currentQuestion];
+      document.getElementById('progressBar').style.width = (currentQuestion / questions.length * 100) + '%';
+      document.getElementById('progressText').textContent = `Question ${currentQuestion + 1} / ${questions.length}`;
+      let html = `<div class="card"><p class="question-label">${q.label} — Question ${currentQuestion + 1}</p><p class="question-text">${q.text}</p>`;
+      if (q.code) html += `<pre><code>${q.code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</code></pre>`;
+      html += `<ul class="options">`;
+      q.options.forEach((opt, i) => { html += `<li><label><input type="radio" name="q${currentQuestion}" value="${i}"><span>${opt}</span></label></li>`; });
+      html += `</ul><div style="margin-top:1rem;"><button class="btn btn-primary" id="validateBtn" onclick="validate()">Valider</button></div><div class="feedback" id="feedback"></div></div>`;
+      document.getElementById('quizContainer').innerHTML = html;
+    }
+    function validate() {
+      if (answered) { currentQuestion++; if (currentQuestion < questions.length) renderQuestion(); else showScore(); return; }
+      const selected = document.querySelector(`input[name="q${currentQuestion}"]:checked`);
+      if (!selected) return;
+      answered = true;
+      const val = parseInt(selected.value), q = questions[currentQuestion], fb = document.getElementById('feedback');
+      document.querySelectorAll(`input[name="q${currentQuestion}"]`).forEach(r => r.disabled = true);
+      if (val === q.answer) { score++; fb.className = 'feedback correct'; fb.innerHTML = `<strong>✅ Correct !</strong><br>${q.explanation}`; }
+      else { fb.className = 'feedback wrong'; fb.innerHTML = `<strong>❌ Incorrect</strong> — Bonne réponse : <em>${q.options[q.answer]}</em><br><br>${q.explanation}`; }
+      document.getElementById('validateBtn').textContent = currentQuestion < questions.length - 1 ? 'Suivant' : 'Voir le score';
+    }
+    function showScore() {
+      document.getElementById('quizContainer').classList.add('hidden');
+      document.getElementById('progressBar').style.width = '100%';
+      document.getElementById('progressText').textContent = 'Terminé !';
+      const sc = document.getElementById('scoreContainer'); sc.classList.remove('hidden');
+      sc.innerHTML = `<div class="score">Score : ${score} / ${questions.length}</div><p class="score-label">${score === questions.length ? 'Parfait !' : score >= 3 ? 'Bon travail !' : 'Continuez à étudier !'}</p><button class="btn btn-restart" onclick="restart()">Recommencer</button>`;
+    }
+    function restart() { currentQuestion = 0; score = 0; document.getElementById('scoreContainer').classList.add('hidden'); document.getElementById('quizContainer').classList.remove('hidden'); renderQuestion(); }
+    renderQuestion();
+  </script>
+</body>
+</html>

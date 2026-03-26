@@ -14,10 +14,18 @@ Formation progressive d'algorithmie pensée pour un développeur JavaScript full
 ## Structure
 
 ```
-modules/     → 13 modules théoriques (Markdown)
-labs/        → 12 labs pratiques exécutables (TypeScript)
-quizzes/     → quizzes HTML pour valider les notions
-visualizations/ → visualisations HTML des structures clés
+modules/          → 13 modules théoriques (Markdown, 300-600+ lignes chacun)
+labs/             → 12 labs pratiques exécutables (TypeScript : exercise.ts + solution.ts)
+quizzes/          → 13 quizzes HTML interactifs (5 questions chacun)
+visualizations/   → 5 visualisations HTML interactives (Canvas)
+glossaire.md      → glossaire complet des termes algorithmiques
+```
+
+## Lancer un lab
+
+```bash
+npm run lab:01          # lance l'exercice du lab 01
+npm run solution:01     # lance la solution du lab 01
 ```
 
 ## Programme
@@ -25,18 +33,28 @@ visualizations/ → visualisations HTML des structures clés
 | # | Module | Lab | Thème |
 |---|--------|-----|-------|
 | 00 | Prérequis & introduction | — | Positionnement |
-| 01 | Complexité & raisonnement | Mesurer et comparer | Big-O pragmatique |
-| 02 | Tableaux, chaînes, hash maps | Déduplication et comptage | Structures de base |
-| 03 | Stacks, queues, listes | File de traitement | Flux et buffers |
-| 04 | Récursion, divide & conquer, binary search | Recherche sur données triées | Décomposition |
-| 05 | Tri, partition, heaps | Top K et ordonnancement | Classement |
-| 06 | Arbres & BST | Navigation hiérarchique | Hiérarchie |
-| 07 | Graphes & parcours | Parcours de dépendances | Relations |
-| 08 | Backtracking | Génération de combinaisons | Exploration |
-| 09 | Programmation dynamique | Coût minimal / sous-problèmes | Optimisation |
-| 10 | Greedy, intervalles, union-find | Fusion d'intervalles | Décisions locales |
-| 11 | Patterns algorithmiques JS fullstack | Sliding window, prefix sums, rate limiting | Cas terrain |
-| 12 | Projet final | Toolkit de résolution | Synthèse |
+| 01 | Complexité & raisonnement | Analyse de complexité | Big-O pragmatique |
+| 02 | Tableaux, chaînes, hash maps | Arrays & hash maps | Structures de base |
+| 03 | Stacks, queues, listes | Stacks & queues | Flux et buffers |
+| 04 | Récursion, divide & conquer, binary search | Récursion & binary search | Décomposition |
+| 05 | Tri, partition, heaps | Sorting & heaps | Classement |
+| 06 | Arbres & BST | Navigation d'arbres | Hiérarchie |
+| 07 | Graphes & parcours | Graphes & dépendances | Relations |
+| 08 | Backtracking | Backtracking solver | Exploration |
+| 09 | Programmation dynamique | Dynamic programming | Optimisation |
+| 10 | Greedy, union-find, trie | Union-Find & Trie | Décisions locales |
+| 11 | Patterns JS fullstack | Patterns fullstack | Cas terrain |
+| 12 | Projet final | Moteur de recommandation | Synthèse |
+
+## Visualisations interactives
+
+| Visualisation | Contenu |
+|---------------|---------|
+| Courbes de complexité | O(1), O(log n), O(n), O(n log n), O(n²), O(2ⁿ) avec slider |
+| Recherche binaire | Animation pas-à-pas avec pointeurs lo/mid/hi |
+| Algorithmes de tri | Bubble, Merge, Quick Sort côte à côte |
+| BFS vs DFS | Parcours animé d'un graphe avec file/pile |
+| Table DP | Remplissage animé de la table Coin Change |
 
 ## Objectifs de sortie
 

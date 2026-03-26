@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualisation — BFS vs DFS sur un graphe</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',Tahoma,sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;padding:2rem 1rem}
+    .container{max-width:900px;margin:0 auto}
+    h1{text-align:center;margin-bottom:.5rem;color:#fff}
+    .subtitle{text-align:center;color:#8892b0;margin-bottom:1.5rem}
+    canvas{background:#0d1117;border-radius:12px;border:1px solid #30363d;display:block;margin:0 auto 1rem}
+    .controls{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:1rem}
+    .btn{padding:.6rem 1.5rem;border:none;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer;transition:background .2s}
+    .btn-bfs{background:#3b82f6;color:#fff}
+    .btn-bfs:hover{background:#60a5fa}
+    .btn-dfs{background:#a855f7;color:#fff}
+    .btn-dfs:hover{background:#c084fc}
+    .btn-secondary{background:#374151;color:#e0e0e0}
+    .btn-secondary:hover{background:#4b5563}
+    .info{text-align:center;color:#8892b0;margin-bottom:1rem;min-height:30px}
+    .legend{display:flex;gap:2rem;justify-content:center;margin-bottom:1rem;font-size:.85rem}
+    .legend span{display:flex;align-items:center;gap:.3rem}
+    .ldot{width:14px;height:14px;border-radius:50%;display:inline-block}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>BFS vs DFS — Parcours de graphe</h1>
+    <p class="subtitle">Observez l'ordre d'exploration de chaque algorithme</p>
+    <div class="controls">
+      <button class="btn btn-bfs" onclick="startTraversal('bfs')">▶ BFS (File)</button>
+      <button class="btn btn-dfs" onclick="startTraversal('dfs')">▶ DFS (Pile)</button>
+      <button class="btn btn-secondary" onclick="reset()">🔄 Reset</button>
+    </div>
+    <div class="legend">
+      <span><span class="ldot" style="background:#30363d"></span> Non visité</span>
+      <span><span class="ldot" style="background:#eab308"></span> En cours</span>
+      <span><span class="ldot" style="background:#22c55e"></span> Visité</span>
+    </div>
+    <div class="info" id="info"></div>
+    <canvas id="canvas" width="860" height="500"></canvas>
+  </div>
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Graph definition
+    const nodes = [
+      {id: 0, label: 'A', x: 430, y: 50},
+      {id: 1, label: 'B', x: 230, y: 150},
+      {id: 2, label: 'C', x: 630, y: 150},
+      {id: 3, label: 'D', x: 130, y: 280},
+      {id: 4, label: 'E', x: 330, y: 280},
+      {id: 5, label: 'F', x: 530, y: 280},
+      {id: 6, label: 'G', x: 730, y: 280},
+      {id: 7, label: 'H', x: 230, y: 410},
+      {id: 8, label: 'I', x: 430, y: 410},
+      {id: 9, label: 'J', x: 630, y: 410},
+    ];
+
+    const edges = [
+      [0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[3,7],[4,8],[5,8],[6,9]
+    ];
+
+    const adj = Array.from({length: nodes.length}, () => []);
+    edges.forEach(([u,v]) => { adj[u].push(v); adj[v].push(u); });
+
+    let nodeState = []; // 0=unvisited, 1=current, 2=visited
+    let visitOrder = [];
+    let running = false;
+
+    function reset() {
+      running = false;
+      nodeState = new Array(nodes.length).fill(0);
+      visitOrder = [];
+      document.getElementById('info').textContent = '';
+      draw();
+    }
+
+    function draw() {
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      // Edges
+      ctx.lineWidth = 2;
+      for (const [u, v] of edges) {
+        const nu = nodes[u], nv = nodes[v];
+        const bothVisited = nodeState[u] >= 1 && nodeState[v] >= 1;
+        ctx.strokeStyle = bothVisited ? '#4dabf7' : '#30363d';
+        ctx.beginPath(); ctx.moveTo(nu.x, nu.y); ctx.lineTo(nv.x, nv.y); ctx.stroke();
+      }
+
+      // Nodes
+      const R = 28;
+      for (const n of nodes) {
+        ctx.beginPath(); ctx.arc(n.x, n.y, R, 0, Math.PI * 2);
+        if (nodeState[n.id] === 2) ctx.fillStyle = '#22c55e';
+        else if (nodeState[n.id] === 1) ctx.fillStyle = '#eab308';
+        else ctx.fillStyle = '#16213e';
+        ctx.fill();
+        ctx.strokeStyle = nodeState[n.id] > 0 ? '#4dabf7' : '#30363d';
+        ctx.lineWidth = 2; ctx.stroke();
+
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(n.label, n.x, n.y);
+
+        // Visit order number
+        const idx = visitOrder.indexOf(n.id);
+        if (idx >= 0) {
+          ctx.fillStyle = '#8892b0'; ctx.font = '11px sans-serif';
+          ctx.fillText((idx + 1).toString(), n.x, n.y + R + 14);
+        }
+      }
+    }
+
+    function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    async function startTraversal(type) {
+      if (running) return;
+      reset(); running = true;
+      const visited = new Set();
+      const structure = [0]; // start from node 0
+
+      document.getElementById('info').textContent = type === 'bfs'
+        ? 'BFS utilise une File (FIFO) — explore niveau par niveau'
+        : 'DFS utilise une Pile (LIFO) — explore en profondeur d\'abord';
+
+      while (structure.length > 0 && running) {
+        const current = type === 'bfs' ? structure.shift() : structure.pop();
+        if (visited.has(current)) continue;
+        visited.add(current);
+        visitOrder.push(current);
+
+        nodeState[current] = 1;
+        draw(); await delay(500);
+        nodeState[current] = 2;
+
+        const neighbors = adj[current].filter(n => !visited.has(n));
+        if (type === 'bfs') {
+          for (const n of neighbors) structure.push(n);
+        } else {
+          for (const n of neighbors.reverse()) structure.push(n);
+        }
+
+        draw(); await delay(300);
+      }
+
+      document.getElementById('info').textContent += ` — Ordre: ${visitOrder.map(i => nodes[i].label).join(' → ')}`;
+      running = false;
+    }
+
+    reset();
+  </script>
+</body>
+</html>

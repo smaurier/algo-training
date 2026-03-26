@@ -1,1 +1,93 @@
-<!doctype html><html lang="fr"><meta charset="utf-8"><title>Quiz 03</title><body><h1>Quiz 03 — Stacks & queues</h1><ol><li>Quelle structure pour un undo ?</li><li>Quelle structure pour un BFS ?</li><li>Pourquoi une linked list reste utile à connaître ?</li></ol></body></html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz 03 — Stacks, Queues et Listes</title>
+  <style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;padding:2rem 1rem}.container{max-width:800px;margin:0 auto}h1{text-align:center;margin-bottom:.5rem;font-size:1.8rem;color:#fff}.subtitle{text-align:center;color:#8892b0;margin-bottom:2rem;font-size:1rem}.progress-bar-container{background:#0d1117;border-radius:10px;height:14px;margin-bottom:2rem;overflow:hidden}.progress-bar{background:linear-gradient(90deg,#0d6efd,#4dabf7);height:100%;width:0%;border-radius:10px;transition:width .4s ease}.progress-text{text-align:center;font-size:.9rem;color:#8892b0;margin-bottom:1.5rem}.card{background:#16213e;border-radius:12px;padding:2rem;margin-bottom:1.5rem;box-shadow:0 4px 20px rgba(0,0,0,.3)}.question-label{font-size:.85rem;color:#4dabf7;text-transform:uppercase;letter-spacing:1px;margin-bottom:.5rem}.question-text{font-size:1.15rem;margin-bottom:1.2rem;line-height:1.5;color:#fff}pre{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:1rem;margin-bottom:1.2rem;overflow-x:auto;font-size:.95rem}code{font-family:'Consolas','Fira Code','Courier New',monospace;color:#c9d1d9}.options{list-style:none}.options li{margin-bottom:.6rem}.options label{display:flex;align-items:center;gap:.75rem;padding:.8rem 1rem;background:#0d1117;border:2px solid #30363d;border-radius:8px;cursor:pointer;transition:border-color .2s,background .2s;font-size:1rem}.options label:hover{border-color:#4dabf7;background:#1c2a4a}.options input[type="radio"]{accent-color:#0d6efd;width:18px;height:18px;flex-shrink:0}.btn{display:inline-block;padding:.7rem 2rem;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;transition:background .2s,transform .1s}.btn:active{transform:scale(.97)}.btn-primary{background:#0d6efd;color:#fff}.btn-primary:hover{background:#3b82f6}.btn-restart{background:#0d6efd;color:#fff;margin-top:1rem}.btn-restart:hover{background:#3b82f6}.feedback{margin-top:1rem;padding:1rem 1.2rem;border-radius:8px;font-size:.95rem;line-height:1.5;display:none}.feedback.correct{background:#0f5132;border:1px solid #198754;color:#d1fae5;display:block}.feedback.wrong{background:#842029;border:1px solid #dc3545;color:#fdd;display:block}.score-card{text-align:center;padding:3rem 2rem}.score-card .score{font-size:3rem;font-weight:700;color:#4dabf7;margin-bottom:.5rem}.score-card .score-label{font-size:1.2rem;color:#8892b0;margin-bottom:1.5rem}.hidden{display:none}</style>
+</head>
+<body>
+  <div class="container">
+    <h1>Quiz 03 — Stacks, Queues et Listes</h1>
+    <p class="subtitle">Structures linéaires et leurs applications</p>
+    <div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
+    <p class="progress-text" id="progressText">Question 1 / 5</p>
+    <div id="quizContainer"></div>
+    <div id="scoreContainer" class="card score-card hidden"></div>
+  </div>
+  <script>
+    const questions = [
+      {
+        label: "Concept",
+        text: "Quelle est la différence fondamentale entre une Stack et une Queue en termes d'ordre d'accès aux éléments ?",
+        code: null,
+        options: [
+          "Une Stack est LIFO (Last In, First Out), une Queue est FIFO (First In, First Out)",
+          "Une Stack est FIFO, une Queue est LIFO",
+          "Les deux sont LIFO mais avec des complexités différentes",
+          "Une Stack n'autorise que des entiers, une Queue accepte tout type"
+        ],
+        answer: 0,
+        explanation: "Une Stack suit le principe LIFO : le dernier élément empilé est le premier retiré (push/pop). Une Queue suit le principe FIFO : le premier élément enfilé est le premier retiré (enqueue/dequeue)."
+      },
+      {
+        label: "Prédiction de code",
+        text: "Que vaut <code>result</code> à la fin de l'exécution ?",
+        code: "const stack = [];\nstack.push(10);\nstack.push(20);\nstack.push(30);\nstack.pop();\nstack.push(40);\nconst result = stack.pop() + stack.pop();",
+        options: [
+          "50",
+          "60",
+          "70",
+          "30"
+        ],
+        answer: 1,
+        explanation: "Après push(10, 20, 30) puis pop() → on retire 30. Stack = [10, 20]. Après push(40) → Stack = [10, 20, 40]. Premier pop() = 40, deuxième pop() = 20. Résultat : 40 + 20 = 60."
+      },
+      {
+        label: "Prédiction de code",
+        text: "Cette fonction vérifie si les parenthèses sont équilibrées. Quel sera le résultat pour l'entrée <code>'([{}])'</code> ?",
+        code: "function isValid(s) {\n  const stack = [];\n  const map = { ')': '(', ']': '[', '}': '{' };\n  for (const ch of s) {\n    if ('({['.includes(ch)) {\n      stack.push(ch);\n    } else {\n      if (stack.pop() !== map[ch]) return false;\n    }\n  }\n  return stack.length === 0;\n}",
+        options: [
+          "false — les types de crochets sont mélangés",
+          "true — chaque ouvrant a son fermant correspondant dans le bon ordre",
+          "Une erreur TypeError car map[ch] est undefined",
+          "false — la stack n'est pas vide à la fin"
+        ],
+        answer: 1,
+        explanation: "L'algorithme empile '(', '[', '{' puis dépile en vérifiant la correspondance : '}' attend '{' (ok), ']' attend '[' (ok), ')' attend '(' (ok). La stack est vide → true."
+      },
+      {
+        label: "Pourquoi ?",
+        text: "Pourquoi utilise-t-on une <em>monotonic stack</em> pour résoudre le problème « Next Greater Element » en O(n) plutôt qu'une approche brute force en O(n²) ?",
+        code: null,
+        options: [
+          "Parce que la stack garde les éléments triés, chaque élément est empilé et dépilé au plus une fois, ce qui donne un coût amorti O(n)",
+          "Parce que la stack utilise moins de mémoire qu'un tableau",
+          "Parce que la stack permet un accès aléatoire en O(1) à n'importe quel élément",
+          "Parce que la stack trie automatiquement les éléments à chaque insertion"
+        ],
+        answer: 0,
+        explanation: "Dans une monotonic stack, chaque élément est push/pop au maximum une fois. Le coût total est donc O(n) amorti, contre O(n²) pour la comparaison de chaque élément avec tous les suivants."
+      },
+      {
+        label: "Concept",
+        text: "En notation polonaise inversée (RPN), quelle est la valeur de l'expression <code>3 4 + 2 *</code> ?",
+        code: null,
+        options: [
+          "11",
+          "14",
+          "24",
+          "9"
+        ],
+        answer: 1,
+        explanation: "On empile 3, 4. L'opérateur + dépile 4 et 3 → 7, empilé. On empile 2. L'opérateur * dépile 2 et 7 → 14. Résultat : 14."
+      }
+    ];
+    let currentQuestion=0,score=0,answered=false;
+    function renderQuestion(){answered=false;const q=questions[currentQuestion];document.getElementById('progressBar').style.width=(currentQuestion/questions.length*100)+'%';document.getElementById('progressText').textContent=`Question ${currentQuestion+1} / ${questions.length}`;let html=`<div class="card"><p class="question-label">${q.label} — Question ${currentQuestion+1}</p><p class="question-text">${q.text}</p>`;if(q.code)html+=`<pre><code>${q.code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</code></pre>`;html+=`<ul class="options">`;q.options.forEach((opt,i)=>{html+=`<li><label><input type="radio" name="q${currentQuestion}" value="${i}"><span>${opt}</span></label></li>`;});html+=`</ul><div style="margin-top:1rem;"><button class="btn btn-primary" id="validateBtn" onclick="validate()">Valider</button></div><div class="feedback" id="feedback"></div></div>`;document.getElementById('quizContainer').innerHTML=html;}
+    function validate(){if(answered){currentQuestion++;if(currentQuestion<questions.length)renderQuestion();else showScore();return;}const selected=document.querySelector(`input[name="q${currentQuestion}"]:checked`);if(!selected)return;answered=true;const val=parseInt(selected.value),q=questions[currentQuestion],fb=document.getElementById('feedback');document.querySelectorAll(`input[name="q${currentQuestion}"]`).forEach(r=>r.disabled=true);if(val===q.answer){score++;fb.className='feedback correct';fb.innerHTML=`<strong>✅ Correct !</strong><br>${q.explanation}`;}else{fb.className='feedback wrong';fb.innerHTML=`<strong>❌ Incorrect</strong> — Bonne réponse : <em>${q.options[q.answer]}</em><br><br>${q.explanation}`;}document.getElementById('validateBtn').textContent=currentQuestion<questions.length-1?'Suivant':'Voir le score';}
+    function showScore(){document.getElementById('quizContainer').classList.add('hidden');document.getElementById('progressBar').style.width='100%';document.getElementById('progressText').textContent='Terminé !';const sc=document.getElementById('scoreContainer');sc.classList.remove('hidden');sc.innerHTML=`<div class="score">Score : ${score} / ${questions.length}</div><p class="score-label">${score===questions.length?'Parfait !':score>=3?'Bon travail !':'Continuez à étudier !'}</p><button class="btn btn-restart" onclick="restart()">Recommencer</button>`;}
+    function restart(){currentQuestion=0;score=0;document.getElementById('scoreContainer').classList.add('hidden');document.getElementById('quizContainer').classList.remove('hidden');renderQuestion();}
+    renderQuestion();
+  </script>
+</body>
+</html>

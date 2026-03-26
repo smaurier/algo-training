@@ -1,1 +1,93 @@
-<!doctype html><html lang="fr"><meta charset="utf-8"><title>Quiz 12</title><body><h1>Quiz 12 — Projet final</h1><ol><li>Que doit contenir le toolkit final ?</li><li>Quelles qualités évaluer sur les solutions ?</li><li>Le plus important en sortie de cours ?</li></ol></body></html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz 12 — Projet Final</title>
+  <style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;padding:2rem 1rem}.container{max-width:800px;margin:0 auto}h1{text-align:center;margin-bottom:.5rem;font-size:1.8rem;color:#fff}.subtitle{text-align:center;color:#8892b0;margin-bottom:2rem;font-size:1rem}.progress-bar-container{background:#0d1117;border-radius:10px;height:14px;margin-bottom:2rem;overflow:hidden}.progress-bar{background:linear-gradient(90deg,#0d6efd,#4dabf7);height:100%;width:0%;border-radius:10px;transition:width .4s ease}.progress-text{text-align:center;font-size:.9rem;color:#8892b0;margin-bottom:1.5rem}.card{background:#16213e;border-radius:12px;padding:2rem;margin-bottom:1.5rem;box-shadow:0 4px 20px rgba(0,0,0,.3)}.question-label{font-size:.85rem;color:#4dabf7;text-transform:uppercase;letter-spacing:1px;margin-bottom:.5rem}.question-text{font-size:1.15rem;margin-bottom:1.2rem;line-height:1.5;color:#fff}pre{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:1rem;margin-bottom:1.2rem;overflow-x:auto;font-size:.95rem}code{font-family:'Consolas','Fira Code','Courier New',monospace;color:#c9d1d9}.options{list-style:none}.options li{margin-bottom:.6rem}.options label{display:flex;align-items:center;gap:.75rem;padding:.8rem 1rem;background:#0d1117;border:2px solid #30363d;border-radius:8px;cursor:pointer;transition:border-color .2s,background .2s;font-size:1rem}.options label:hover{border-color:#4dabf7;background:#1c2a4a}.options input[type="radio"]{accent-color:#0d6efd;width:18px;height:18px;flex-shrink:0}.btn{display:inline-block;padding:.7rem 2rem;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;transition:background .2s,transform .1s}.btn:active{transform:scale(.97)}.btn-primary{background:#0d6efd;color:#fff}.btn-primary:hover{background:#3b82f6}.btn-restart{background:#0d6efd;color:#fff;margin-top:1rem}.btn-restart:hover{background:#3b82f6}.feedback{margin-top:1rem;padding:1rem 1.2rem;border-radius:8px;font-size:.95rem;line-height:1.5;display:none}.feedback.correct{background:#0f5132;border:1px solid #198754;color:#d1fae5;display:block}.feedback.wrong{background:#842029;border:1px solid #dc3545;color:#fdd;display:block}.score-card{text-align:center;padding:3rem 2rem}.score-card .score{font-size:3rem;font-weight:700;color:#4dabf7;margin-bottom:.5rem}.score-card .score-label{font-size:1.2rem;color:#8892b0;margin-bottom:1.5rem}.hidden{display:none}</style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏆 Quiz 12 — Projet Final</h1>
+    <p class="subtitle">Intégration de toutes les structures et algorithmes</p>
+    <div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
+    <p class="progress-text" id="progressText">Question 1 / 5</p>
+    <div id="quizContainer"></div>
+    <div id="scoreContainer" class="card score-card hidden"></div>
+  </div>
+  <script>
+    const questions = [
+      {
+        label: "Concept",
+        text: "Quelle structure de données est la plus adaptée pour implémenter une fonctionnalité d'<strong>autocomplétion</strong> (suggestions au fur et à mesure de la frappe) ?",
+        code: null,
+        options: [
+          "Un tableau trié avec recherche binaire",
+          "Un Trie (arbre préfixe)",
+          "Une HashMap avec les mots comme clés",
+          "Un graphe orienté acyclique (DAG)"
+        ],
+        answer: 1,
+        explanation: "Un <strong>Trie</strong> (arbre préfixe) est idéal pour l'autocomplétion car il permet de retrouver tous les mots partageant un préfixe donné en O(p + k), où p est la longueur du préfixe et k le nombre de résultats. Chaque nœud représente un caractère, et on descend dans l'arbre au fur et à mesure de la frappe."
+      },
+      {
+        label: "Prédiction de code",
+        text: "Quel est le résultat de la <strong>similarité de Jaccard</strong> entre ces deux ensembles de tags ?",
+        code: "function jaccard(a, b) {\n  const setA = new Set(a);\n  const setB = new Set(b);\n  const intersection = [...setA].filter(x => setB.has(x));\n  const union = new Set([...setA, ...setB]);\n  return intersection.length / union.size;\n}\n\njaccard([\"a\", \"b\", \"c\"], [\"b\", \"c\", \"d\"]);",
+        options: [
+          "0.25 (1/4)",
+          "0.5 (2/4)",
+          "0.75 (3/4)",
+          "0.67 (2/3)"
+        ],
+        answer: 1,
+        explanation: "L'intersection de {a, b, c} et {b, c, d} est {b, c} → taille 2. L'union est {a, b, c, d} → taille 4. La similarité de Jaccard est donc <code>2 / 4 = 0.5</code>. Plus la valeur est proche de 1, plus les ensembles sont similaires."
+      },
+      {
+        label: "Concept",
+        text: "Pourquoi utiliser un <strong>MinHeap</strong> pour trouver les top-K éléments plutôt que de simplement trier le tableau ?",
+        code: null,
+        options: [
+          "Le MinHeap donne toujours un résultat plus précis que le tri",
+          "Le MinHeap a une complexité O(n log k) au lieu de O(n log n) pour le tri complet",
+          "Le MinHeap consomme O(n) de mémoire supplémentaire contre O(1) pour le tri",
+          "Le MinHeap fonctionne uniquement sur des nombres, le tri est plus générique"
+        ],
+        answer: 1,
+        explanation: "Pour trouver les top-K éléments parmi n, un <strong>MinHeap de taille K</strong> parcourt les n éléments en maintenant les K plus grands. Complexité : <strong>O(n log k)</strong>. Un tri complet coûte O(n log n). Quand k ≪ n, le MinHeap est nettement plus efficace. De plus, il ne nécessite que <strong>O(k)</strong> de mémoire."
+      },
+      {
+        label: "Prédiction de code",
+        text: "Que retourne <code>cache.get('x')</code> après l'expiration du TTL ?",
+        code: "class LRUCache {\n  constructor(capacity, ttlMs) {\n    this.capacity = capacity;\n    this.ttlMs = ttlMs;\n    this.map = new Map();\n  }\n  get(key) {\n    const entry = this.map.get(key);\n    if (!entry) return undefined;\n    if (Date.now() - entry.ts > this.ttlMs) {\n      this.map.delete(key);\n      return undefined;\n    }\n    this.map.delete(key);\n    this.map.set(key, entry); // refresh order\n    return entry.value;\n  }\n}\n\nconst cache = new LRUCache(10, 1000); // TTL = 1s\ncache.map.set('x', { value: 42, ts: Date.now() - 2000 });\ncache.get('x'); // appelé 2s après insertion",
+        options: [
+          "42, car la valeur est toujours dans le cache",
+          "undefined, car le TTL de 1s est dépassé et l'entrée est supprimée",
+          "null, car le cache retourne null pour les entrées expirées",
+          "Une erreur TypeError car ts est invalide"
+        ],
+        answer: 1,
+        explanation: "L'entrée a été insérée il y a 2000 ms mais le TTL est de 1000 ms. La condition <code>Date.now() - entry.ts > this.ttlMs</code> est vraie (2000 > 1000), donc l'entrée est supprimée du cache et la méthode retourne <code>undefined</code>. C'est le mécanisme classique d'invalidation par TTL."
+      },
+      {
+        label: "Pourquoi ?",
+        text: "Pourquoi les systèmes réels combinent-ils souvent plusieurs structures de données (<strong>Trie + Graphe + Heap + Cache</strong>) plutôt que d'en utiliser une seule ?",
+        code: null,
+        options: [
+          "Pour rendre le code plus complexe et impressionner lors des revues de code",
+          "Parce que chaque structure excelle dans un type d'opération spécifique, et un système réel a des besoins variés",
+          "Parce que les frameworks modernes imposent l'utilisation de toutes ces structures",
+          "Pour garantir la compatibilité avec différents langages de programmation"
+        ],
+        answer: 1,
+        explanation: "Chaque structure de données est optimisée pour un type de requête : le <strong>Trie</strong> pour la recherche par préfixe, le <strong>Graphe</strong> pour les relations entre entités, le <strong>Heap</strong> pour extraire les top-K rapidement, et le <strong>Cache LRU</strong> pour éviter de recalculer des résultats coûteux. Un système comme un moteur de recherche ou un réseau social combine ces structures pour répondre efficacement à des besoins variés (autocomplétion, recommandation, classement, performance)."
+      }
+    ];
+    let currentQuestion=0,score=0,answered=false;
+    function renderQuestion(){answered=false;const q=questions[currentQuestion];document.getElementById('progressBar').style.width=(currentQuestion/questions.length*100)+'%';document.getElementById('progressText').textContent=`Question ${currentQuestion+1} / ${questions.length}`;let html=`<div class="card"><p class="question-label">${q.label} — Question ${currentQuestion+1}</p><p class="question-text">${q.text}</p>`;if(q.code)html+=`<pre><code>${q.code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</code></pre>`;html+=`<ul class="options">`;q.options.forEach((opt,i)=>{html+=`<li><label><input type="radio" name="q${currentQuestion}" value="${i}"><span>${opt}</span></label></li>`;});html+=`</ul><div style="margin-top:1rem;"><button class="btn btn-primary" id="validateBtn" onclick="validate()">Valider</button></div><div class="feedback" id="feedback"></div></div>`;document.getElementById('quizContainer').innerHTML=html;}
+    function validate(){if(answered){currentQuestion++;if(currentQuestion<questions.length)renderQuestion();else showScore();return;}const selected=document.querySelector(`input[name="q${currentQuestion}"]:checked`);if(!selected)return;answered=true;const val=parseInt(selected.value),q=questions[currentQuestion],fb=document.getElementById('feedback');document.querySelectorAll(`input[name="q${currentQuestion}"]`).forEach(r=>r.disabled=true);if(val===q.answer){score++;fb.className='feedback correct';fb.innerHTML=`<strong>✅ Correct !</strong><br>${q.explanation}`;}else{fb.className='feedback wrong';fb.innerHTML=`<strong>❌ Incorrect</strong> — Bonne réponse : <em>${q.options[q.answer]}</em><br><br>${q.explanation}`;}document.getElementById('validateBtn').textContent=currentQuestion<questions.length-1?'Suivant':'Voir le score';}
+    function showScore(){document.getElementById('quizContainer').classList.add('hidden');document.getElementById('progressBar').style.width='100%';document.getElementById('progressText').textContent='Terminé !';const sc=document.getElementById('scoreContainer');sc.classList.remove('hidden');sc.innerHTML=`<div class="score">Score : ${score} / ${questions.length}</div><p class="score-label">${score===questions.length?'Parfait !':score>=3?'Bon travail !':'Continuez à étudier !'}</p><button class="btn btn-restart" onclick="restart()">Recommencer</button>`;}
+    function restart(){currentQuestion=0;score=0;document.getElementById('scoreContainer').classList.add('hidden');document.getElementById('quizContainer').classList.remove('hidden');renderQuestion();}
+    renderQuestion();
+  </script>
+</body>
+</html>

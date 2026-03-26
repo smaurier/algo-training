@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualisation — Recherche binaire pas à pas</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',Tahoma,sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;padding:2rem 1rem}
+    .container{max-width:900px;margin:0 auto}
+    h1{text-align:center;margin-bottom:.5rem;color:#fff}
+    .subtitle{text-align:center;color:#8892b0;margin-bottom:1.5rem}
+    .array-container{display:flex;justify-content:center;gap:4px;margin-bottom:1.5rem;flex-wrap:wrap}
+    .cell{width:52px;height:52px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-weight:600;font-size:1rem;transition:all .3s ease;border:2px solid #30363d;background:#0d1117}
+    .cell.active{background:#16213e;border-color:#4dabf7}
+    .cell.mid{background:#0d6efd;border-color:#0d6efd;color:#fff;transform:scale(1.1)}
+    .cell.found{background:#198754;border-color:#22c55e;color:#fff;transform:scale(1.15)}
+    .cell.eliminated{opacity:.25}
+    .info{text-align:center;margin-bottom:1.5rem;min-height:60px}
+    .info p{margin:.3rem 0;font-size:1rem}
+    .info .step{color:#4dabf7;font-weight:600}
+    .controls{display:flex;gap:1rem;justify-content:center;margin-bottom:1.5rem}
+    .btn{padding:.6rem 1.5rem;border:none;border-radius:8px;font-size:.95rem;font-weight:600;cursor:pointer;transition:background .2s}
+    .btn-primary{background:#0d6efd;color:#fff}
+    .btn-primary:hover{background:#3b82f6}
+    .btn-secondary{background:#374151;color:#e0e0e0}
+    .btn-secondary:hover{background:#4b5563}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .input-group{display:flex;gap:.5rem;justify-content:center;margin-bottom:1.5rem}
+    .input-group input{background:#0d1117;border:2px solid #30363d;border-radius:8px;padding:.5rem 1rem;color:#e0e0e0;font-size:1rem;width:120px;text-align:center}
+    .input-group input:focus{border-color:#4dabf7;outline:none}
+    .pointers{display:flex;justify-content:center;gap:4px;margin-bottom:.5rem}
+    .pointer-cell{width:52px;text-align:center;font-size:.7rem;color:#8892b0;height:20px}
+    .pointer-cell.lo{color:#22c55e}
+    .pointer-cell.hi{color:#ef4444}
+    .pointer-cell.md{color:#4dabf7;font-weight:bold}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Recherche binaire — pas à pas</h1>
+    <p class="subtitle">Observez comment l'espace de recherche est divisé par 2 à chaque étape</p>
+    <div class="input-group">
+      <input type="number" id="targetInput" placeholder="Cible" value="23">
+      <button class="btn btn-primary" onclick="startSearch()">Chercher</button>
+      <button class="btn btn-secondary" onclick="resetAll()">Reset</button>
+    </div>
+    <div class="pointers" id="pointers"></div>
+    <div class="array-container" id="arrayContainer"></div>
+    <div class="info" id="info"></div>
+    <div class="controls">
+      <button class="btn btn-primary" id="stepBtn" onclick="step()" disabled>Étape suivante</button>
+      <button class="btn btn-secondary" id="autoBtn" onclick="autoPlay()">▶ Auto</button>
+    </div>
+  </div>
+  <script>
+    const arr = [2, 5, 8, 11, 14, 17, 20, 23, 27, 31, 35, 40, 45, 50, 58];
+    let lo, hi, mid, target, stepCount, found, done, autoId;
+
+    function render() {
+      const container = document.getElementById('arrayContainer');
+      const pointers = document.getElementById('pointers');
+      container.innerHTML = '';
+      pointers.innerHTML = '';
+
+      arr.forEach((val, i) => {
+        // Pointer
+        const ptr = document.createElement('div');
+        ptr.className = 'pointer-cell';
+        if (i === lo && i === hi && i === mid) { ptr.textContent = 'lo/mid/hi'; ptr.className += ' md'; }
+        else if (i === lo && i === mid) { ptr.textContent = 'lo/mid'; ptr.className += ' md'; }
+        else if (i === hi && i === mid) { ptr.textContent = 'mid/hi'; ptr.className += ' md'; }
+        else if (i === mid && !done) { ptr.textContent = 'mid'; ptr.className += ' md'; }
+        else if (i === lo) { ptr.textContent = 'lo'; ptr.className += ' lo'; }
+        else if (i === hi) { ptr.textContent = 'hi'; ptr.className += ' hi'; }
+        pointers.appendChild(ptr);
+
+        // Cell
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.textContent = val;
+        if (found && i === mid) cell.className += ' found';
+        else if (!done && i === mid) cell.className += ' mid';
+        else if (!done && i >= lo && i <= hi) cell.className += ' active';
+        else if (done && found && i === mid) cell.className += ' found';
+        else cell.className += ' eliminated';
+        container.appendChild(cell);
+      });
+    }
+
+    function startSearch() {
+      if (autoId) { clearInterval(autoId); autoId = null; }
+      target = parseInt(document.getElementById('targetInput').value);
+      if (isNaN(target)) return;
+      lo = 0; hi = arr.length - 1; mid = -1; stepCount = 0; found = false; done = false;
+      document.getElementById('stepBtn').disabled = false;
+      document.getElementById('info').innerHTML = `<p>Recherche de <strong>${target}</strong> dans un tableau de ${arr.length} éléments</p><p>lo=${lo}, hi=${hi}</p>`;
+      render();
+    }
+
+    function step() {
+      if (done) return;
+      if (lo > hi) {
+        done = true;
+        document.getElementById('info').innerHTML = `<p class="step">❌ ${target} non trouvé après ${stepCount} étapes</p><p>O(log ${arr.length}) = ${Math.ceil(Math.log2(arr.length))} étapes max</p>`;
+        document.getElementById('stepBtn').disabled = true;
+        render();
+        return;
+      }
+      mid = Math.floor((lo + hi) / 2);
+      stepCount++;
+
+      if (arr[mid] === target) {
+        found = true; done = true;
+        document.getElementById('info').innerHTML = `<p class="step">✅ Trouvé ! arr[${mid}] = ${target} en ${stepCount} étape(s)</p><p>O(log ${arr.length}) = ${Math.ceil(Math.log2(arr.length))} étapes max</p>`;
+        document.getElementById('stepBtn').disabled = true;
+      } else if (arr[mid] < target) {
+        document.getElementById('info').innerHTML = `<p class="step">Étape ${stepCount}: mid=${mid}, arr[${mid}]=${arr[mid]} &lt; ${target} → chercher à droite</p><p>lo=${mid + 1}, hi=${hi}</p>`;
+        render();
+        setTimeout(() => { lo = mid + 1; mid = -1; render(); }, 400);
+        return;
+      } else {
+        document.getElementById('info').innerHTML = `<p class="step">Étape ${stepCount}: mid=${mid}, arr[${mid}]=${arr[mid]} &gt; ${target} → chercher à gauche</p><p>lo=${lo}, hi=${mid - 1}</p>`;
+        render();
+        setTimeout(() => { hi = mid - 1; mid = -1; render(); }, 400);
+        return;
+      }
+      render();
+    }
+
+    function autoPlay() {
+      if (autoId) { clearInterval(autoId); autoId = null; return; }
+      if (done || mid === undefined) startSearch();
+      autoId = setInterval(() => {
+        if (done) { clearInterval(autoId); autoId = null; return; }
+        step();
+      }, 1200);
+    }
+
+    function resetAll() {
+      if (autoId) { clearInterval(autoId); autoId = null; }
+      lo = 0; hi = arr.length - 1; mid = -1; done = false; found = false; stepCount = 0;
+      document.getElementById('info').innerHTML = '';
+      document.getElementById('stepBtn').disabled = true;
+      render();
+    }
+
+    resetAll();
+  </script>
+</body>
+</html>

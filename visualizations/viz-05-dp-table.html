@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualisation — Table DP (Coin Change)</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',Tahoma,sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;padding:2rem 1rem}
+    .container{max-width:960px;margin:0 auto}
+    h1{text-align:center;margin-bottom:.5rem;color:#fff}
+    .subtitle{text-align:center;color:#8892b0;margin-bottom:1.5rem}
+    .input-row{display:flex;gap:1rem;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:1.5rem}
+    .input-row label{font-size:.9rem}
+    .input-row input{background:#0d1117;border:2px solid #30363d;border-radius:8px;padding:.4rem .8rem;color:#e0e0e0;font-size:.9rem;width:100px;text-align:center}
+    .input-row input:focus{border-color:#4dabf7;outline:none}
+    .btn{padding:.5rem 1.2rem;border:none;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer;transition:background .2s}
+    .btn-primary{background:#0d6efd;color:#fff}
+    .btn-primary:hover{background:#3b82f6}
+    .btn-secondary{background:#374151;color:#e0e0e0}
+    .btn-secondary:hover{background:#4b5563}
+    table{border-collapse:collapse;margin:0 auto 1.5rem;font-size:.85rem}
+    th,td{border:1px solid #30363d;padding:.4rem .6rem;text-align:center;min-width:36px}
+    th{background:#16213e;color:#4dabf7;font-weight:600}
+    td{background:#0d1117;transition:background .3s}
+    td.current{background:#0d6efd;color:#fff;font-weight:bold}
+    td.updated{background:#198754;color:#fff}
+    td.optimal{background:#eab308;color:#000;font-weight:bold}
+    .info{text-align:center;color:#8892b0;margin-bottom:1rem;min-height:40px;font-size:.95rem}
+    .controls{display:flex;gap:1rem;justify-content:center;margin-bottom:1.5rem}
+    .result{text-align:center;font-size:1.1rem;margin-top:1rem}
+    .result strong{color:#22c55e}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Programmation dynamique — Coin Change</h1>
+    <p class="subtitle">Observez comment la table DP se remplit pour trouver le minimum de pièces</p>
+    <div class="input-row">
+      <label>Pièces: <input id="coinsInput" value="1, 5, 10, 25"></label>
+      <label>Montant: <input id="amountInput" value="36" type="number"></label>
+      <button class="btn btn-primary" onclick="init()">Démarrer</button>
+    </div>
+    <div class="controls">
+      <button class="btn btn-primary" id="stepBtn" onclick="step()" disabled>Étape suivante</button>
+      <button class="btn btn-secondary" onclick="autoRun()">▶ Auto</button>
+      <button class="btn btn-secondary" onclick="solveAll()">⏩ Tout résoudre</button>
+    </div>
+    <div class="info" id="info"></div>
+    <div id="tableContainer" style="overflow-x:auto"></div>
+    <div class="result" id="result"></div>
+  </div>
+  <script>
+    let coins, amount, dp, currentAmount, currentCoinIdx, autoId, done;
+    let highlights = {}; // { cellKey: className }
+
+    function init() {
+      if (autoId) { clearInterval(autoId); autoId = null; }
+      coins = document.getElementById('coinsInput').value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+      amount = parseInt(document.getElementById('amountInput').value);
+      if (!coins.length || isNaN(amount) || amount < 0) return;
+
+      dp = new Array(amount + 1).fill(Infinity);
+      dp[0] = 0;
+      currentAmount = 1;
+      currentCoinIdx = 0;
+      done = false;
+      highlights = {};
+      document.getElementById('stepBtn').disabled = false;
+      document.getElementById('result').innerHTML = '';
+      document.getElementById('info').textContent = `Pièces: [${coins.join(', ')}] — Montant cible: ${amount}`;
+      renderTable();
+    }
+
+    function renderTable() {
+      const container = document.getElementById('tableContainer');
+      // Show a subset if amount is large
+      const maxCols = Math.min(amount + 1, 40);
+      const startCol = Math.max(0, currentAmount - 20);
+      const endCol = Math.min(amount + 1, startCol + maxCols);
+
+      let html = '<table><tr><th>montant →</th>';
+      for (let i = startCol; i < endCol; i++) html += `<th>${i}</th>`;
+      html += '</tr><tr><th>dp[i]</th>';
+      for (let i = startCol; i < endCol; i++) {
+        const key = `${i}`;
+        const cls = highlights[key] || '';
+        const val = dp[i] === Infinity ? '∞' : dp[i];
+        html += `<td class="${cls}">${val}</td>`;
+      }
+      html += '</tr></table>';
+      container.innerHTML = html;
+    }
+
+    function step() {
+      if (done) return;
+      highlights = {};
+
+      if (currentAmount > amount) {
+        done = true;
+        document.getElementById('stepBtn').disabled = true;
+        // Highlight the answer
+        highlights[`${amount}`] = 'optimal';
+        renderTable();
+        const res = dp[amount] === Infinity ? -1 : dp[amount];
+        document.getElementById('result').innerHTML = res === -1
+          ? `<strong style="color:#ef4444">Impossible !</strong> Aucune combinaison ne donne ${amount}`
+          : `<strong>Résultat : ${res} pièce(s)</strong> pour le montant ${amount}`;
+        return;
+      }
+
+      // Process current amount with current coin
+      const coin = coins[currentCoinIdx];
+      highlights[`${currentAmount}`] = 'current';
+
+      if (coin <= currentAmount && dp[currentAmount - coin] + 1 < dp[currentAmount]) {
+        dp[currentAmount] = dp[currentAmount - coin] + 1;
+        highlights[`${currentAmount}`] = 'updated';
+        highlights[`${currentAmount - coin}`] = 'current';
+        document.getElementById('info').textContent =
+          `montant=${currentAmount}, pièce=${coin}: dp[${currentAmount}] = dp[${currentAmount - coin}]+1 = ${dp[currentAmount]}`;
+      } else {
+        document.getElementById('info').textContent =
+          `montant=${currentAmount}, pièce=${coin}: pas de mise à jour (dp[${currentAmount}]=${dp[currentAmount] === Infinity ? '∞' : dp[currentAmount]})`;
+      }
+
+      currentCoinIdx++;
+      if (currentCoinIdx >= coins.length) {
+        currentCoinIdx = 0;
+        currentAmount++;
+      }
+
+      renderTable();
+    }
+
+    function autoRun() {
+      if (autoId) { clearInterval(autoId); autoId = null; return; }
+      if (done) init();
+      autoId = setInterval(() => {
+        if (done) { clearInterval(autoId); autoId = null; return; }
+        step();
+      }, 150);
+    }
+
+    function solveAll() {
+      if (autoId) { clearInterval(autoId); autoId = null; }
+      if (done) init();
+      while (!done) step();
+    }
+
+    init();
+  </script>
+</body>
+</html>

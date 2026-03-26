@@ -11,7 +11,7 @@ hero:
       link: /modules/00-prerequis-et-introduction
     - theme: alt
       text: Voir les labs
-      link: /labs/lab-01-complexite/README
+      link: /labs/lab-01-complexity-analysis/README
 
 features:
   - title: 13 Modules progressifs
@@ -27,15 +27,15 @@ features:
 | # | Module | Lab | Quiz |
 |---|--------|-----|------|
 | 00 | [Prérequis & introduction](/modules/00-prerequis-et-introduction) | — | [Quiz](/quizzes/quiz-00-prerequis.html) |
-| 01 | [Complexité & raisonnement](/modules/01-complexite-et-raisonnement) | [Lab 01](/labs/lab-01-complexite/README) | [Quiz](/quizzes/quiz-01-complexite.html) |
-| 02 | [Tableaux, chaînes, hash maps](/modules/02-tableaux-chaines-hash-maps) | [Lab 02](/labs/lab-02-tableaux-hashmap/README) | [Quiz](/quizzes/quiz-02-tableaux-hashmaps.html) |
+| 01 | [Complexité & raisonnement](/modules/01-complexite-et-raisonnement) | [Lab 01](/labs/lab-01-complexity-analysis/README) | [Quiz](/quizzes/quiz-01-complexite.html) |
+| 02 | [Tableaux, chaînes, hash maps](/modules/02-tableaux-chaines-hash-maps) | [Lab 02](/labs/lab-02-arrays-hashmaps/README) | [Quiz](/quizzes/quiz-02-tableaux-hash.html) |
 | 03 | [Stacks, queues, listes](/modules/03-stacks-queues-listes) | [Lab 03](/labs/lab-03-stacks-queues/README) | [Quiz](/quizzes/quiz-03-stacks-queues.html) |
-| 04 | [Récursion & binary search](/modules/04-recursion-divide-conquer-binary-search) | [Lab 04](/labs/lab-04-recursion-binary-search/README) | [Quiz](/quizzes/quiz-04-recursion-binary-search.html) |
-| 05 | [Tri & heaps](/modules/05-tris-partition-heaps) | [Lab 05](/labs/lab-05-sorting-heap/README) | [Quiz](/quizzes/quiz-05-sorting-heaps.html) |
-| 06 | [Arbres & BST](/modules/06-arbres-bst) | [Lab 06](/labs/lab-06-trees/README) | [Quiz](/quizzes/quiz-06-trees.html) |
-| 07 | [Graphes & parcours](/modules/07-graphes-et-parcours) | [Lab 07](/labs/lab-07-graphs/README) | [Quiz](/quizzes/quiz-07-graphs.html) |
-| 08 | [Backtracking](/modules/08-backtracking-et-recherche-exhaustive) | [Lab 08](/labs/lab-08-backtracking/README) | [Quiz](/quizzes/quiz-08-backtracking.html) |
-| 09 | [Programmation dynamique](/modules/09-programmation-dynamique) | [Lab 09](/labs/lab-09-dynamic-programming/README) | [Quiz](/quizzes/quiz-09-dynamic-programming.html) |
-| 10 | [Greedy, intervalles, union-find](/modules/10-greedy-intervalles-union-find) | [Lab 10](/labs/lab-10-greedy-union-find/README) | [Quiz](/quizzes/quiz-10-greedy-union-find.html) |
-| 11 | [Patterns algorithmiques JS](/modules/11-patterns-algorithmiques-js-fullstack) | [Lab 11](/labs/lab-11-patterns/README) | [Quiz](/quizzes/quiz-11-patterns-js.html) |
-| 12 | [Projet final](/modules/12-projet-final) | [Lab 12](/labs/lab-12-projet-final/README) | [Quiz](/quizzes/quiz-12-projet-final.html) |
+| 04 | [Récursion & binary search](/modules/04-recursion-divide-conquer-binary-search) | [Lab 04](/labs/lab-04-recursion-binary-search/README) | [Quiz](/quizzes/quiz-04-recursion.html) |
+| 05 | [Tri & heaps](/modules/05-tris-partition-heaps) | [Lab 05](/labs/lab-05-sorting-heaps/README) | [Quiz](/quizzes/quiz-05-tris-heaps.html) |
+| 06 | [Arbres & BST](/modules/06-arbres-bst) | [Lab 06](/labs/lab-06-tree-navigation/README) | [Quiz](/quizzes/quiz-06-arbres.html) |
+| 07 | [Graphes & parcours](/modules/07-graphes-et-parcours) | [Lab 07](/labs/lab-07-graph-dependencies/README) | [Quiz](/quizzes/quiz-07-graphes.html) |
+| 08 | [Backtracking](/modules/08-backtracking) | [Lab 08](/labs/lab-08-backtracking-solver/README) | [Quiz](/quizzes/quiz-08-backtracking.html) |
+| 09 | [Programmation dynamique](/modules/09-programmation-dynamique) | [Lab 09](/labs/lab-09-dynamic-programming/README) | [Quiz](/quizzes/quiz-09-dp.html) |
+| 10 | [Greedy, union-find, trie](/modules/10-greedy-unionfind-trie) | [Lab 10](/labs/lab-10-unionfind-trie/README) | [Quiz](/quizzes/quiz-10-greedy-uf-trie.html) |
+| 11 | [Patterns JS fullstack](/modules/11-patterns-js-fullstack) | [Lab 11](/labs/lab-11-fullstack-patterns/README) | [Quiz](/quizzes/quiz-11-patterns-fullstack.html) |
+| 12 | [Projet final](/modules/12-projet-final) | [Lab 12](/labs/lab-12-recommendation-engine/README) | [Quiz](/quizzes/quiz-12-projet-final.html) |
