@@ -1,0 +1,45 @@
+{
+  "name": "algorithms-course",
+  "version": "1.0.0",
+  "description": "Formation progressive en algorithmie pour développeurs JavaScript fullstack",
+  "type": "module",
+  "scripts": {
+    "docs:copy-assets": "npx tsx scripts/copy-assets.ts",
+    "docs:dev": "npm run docs:copy-assets && vitepress dev",
+    "docs:build": "npm run docs:copy-assets && vitepress build",
+    "docs:preview": "vitepress preview",
+    "lab:01": "npx tsx labs/lab-01-complexite/exercise.ts",
+    "lab:02": "npx tsx labs/lab-02-tableaux-hashmap/exercise.ts",
+    "lab:03": "npx tsx labs/lab-03-stacks-queues/exercise.ts",
+    "lab:04": "npx tsx labs/lab-04-recursion-binary-search/exercise.ts",
+    "lab:05": "npx tsx labs/lab-05-sorting-heap/exercise.ts",
+    "lab:06": "npx tsx labs/lab-06-trees/exercise.ts",
+    "lab:07": "npx tsx labs/lab-07-graphs/exercise.ts",
+    "lab:08": "npx tsx labs/lab-08-backtracking/exercise.ts",
+    "lab:09": "npx tsx labs/lab-09-dynamic-programming/exercise.ts",
+    "lab:10": "npx tsx labs/lab-10-greedy-union-find/exercise.ts",
+    "lab:11": "npx tsx labs/lab-11-patterns/exercise.ts",
+    "lab:12": "npx tsx labs/lab-12-projet-final/exercise.ts",
+    "solution:01": "npx tsx labs/lab-01-complexite/solution.ts",
+    "solution:02": "npx tsx labs/lab-02-tableaux-hashmap/solution.ts",
+    "solution:03": "npx tsx labs/lab-03-stacks-queues/solution.ts",
+    "solution:04": "npx tsx labs/lab-04-recursion-binary-search/solution.ts",
+    "solution:05": "npx tsx labs/lab-05-sorting-heap/solution.ts",
+    "solution:06": "npx tsx labs/lab-06-trees/solution.ts",
+    "solution:07": "npx tsx labs/lab-07-graphs/solution.ts",
+    "solution:08": "npx tsx labs/lab-08-backtracking/solution.ts",
+    "solution:09": "npx tsx labs/lab-09-dynamic-programming/solution.ts",
+    "solution:10": "npx tsx labs/lab-10-greedy-union-find/solution.ts",
+    "solution:11": "npx tsx labs/lab-11-patterns/solution.ts",
+    "solution:12": "npx tsx labs/lab-12-projet-final/solution.ts"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitepress": "^1.6.0"
+  }
+}
