@@ -7,6 +7,49 @@
 console.log("=== Lab 11 : Patterns Fullstack — Solutions ===\n");
 
 // =============================================================================
+// PARTIE 0 : Rappels JS natifs (Array/Object)
+// =============================================================================
+
+console.log("--- Partie 0 : Rappels JS natifs ---");
+
+interface TeamMember {
+  id: number;
+  nom: string;
+  role: 'admin' | 'editor' | 'reader';
+  actif: boolean;
+}
+
+const team: TeamMember[] = [
+  { id: 1, nom: 'Alice', role: 'admin', actif: true },
+  { id: 2, nom: 'Bob', role: 'editor', actif: false },
+  { id: 3, nom: 'Chloe', role: 'editor', actif: true },
+  { id: 4, nom: 'Dina', role: 'reader', actif: true },
+];
+
+function nomsActifs(users: TeamMember[]): string[] {
+  return users.filter(user => user.actif).map(user => user.nom);
+}
+
+function grouperNomsParRole(users: TeamMember[]): Record<string, string[]> {
+  return users.reduce<Record<string, string[]>>((acc, user) => {
+    if (!user.actif) return acc;
+    acc[user.role] ??= [];
+    acc[user.role].push(user.nom);
+    return acc;
+  }, {});
+}
+
+function resumeRoles(groupes: Record<string, string[]>): string {
+  return Object.entries(groupes)
+    .map(([role, noms]) => `${role}:${noms.length}`)
+    .join(', ');
+}
+
+console.log('Actifs:', nomsActifs(team), '(attendu: [Alice, Chloe, Dina])');
+console.log('Groupes:', grouperNomsParRole(team));
+console.log('Resume:', resumeRoles(grouperNomsParRole(team)), '(attendu: admin:1, editor:1, reader:1)');
+
+// =============================================================================
 // PARTIE 1 : Debounce & Throttle
 // =============================================================================
 
