@@ -15,15 +15,15 @@ console.log("--- Partie 0 : Rappels JS natifs ---");
 interface TeamMember {
   id: number;
   nom: string;
-  role: 'admin' | 'editor' | 'reader';
+  role: "admin" | "editor" | "reader";
   actif: boolean;
 }
 
 const team: TeamMember[] = [
-  { id: 1, nom: 'Alice', role: 'admin', actif: true },
-  { id: 2, nom: 'Bob', role: 'editor', actif: false },
-  { id: 3, nom: 'Chloe', role: 'editor', actif: true },
-  { id: 4, nom: 'Dina', role: 'reader', actif: true },
+  { id: 1, nom: "Alice", role: "admin", actif: true },
+  { id: 2, nom: "Bob", role: "editor", actif: false },
+  { id: 3, nom: "Chloe", role: "editor", actif: true },
+  { id: 4, nom: "Dina", role: "reader", actif: true },
 ];
 
 function nomsActifs(users: TeamMember[]): string[] {
@@ -39,12 +39,44 @@ function grouperNomsParRole(users: TeamMember[]): Record<string, string[]> {
 function resumeRoles(groupes: Record<string, string[]>): string {
   // TODO : Utiliser Object.entries pour produire une chaine du type
   // "admin:1, editor:1, reader:1"
-  return '';
+  return "";
 }
 
-console.log('Actifs:', nomsActifs(team), '(attendu: [Alice, Chloe, Dina])');
-console.log('Groupes:', grouperNomsParRole(team));
-console.log('Resume:', resumeRoles(grouperNomsParRole(team)), '(attendu: admin:1, editor:1, reader:1)');
+function rolesUniques(users: TeamMember[]): string[] {
+  // TODO : Retourner la liste des roles uniques avec Set
+  return [];
+}
+
+function indexParNom(users: TeamMember[]): Record<string, TeamMember> {
+  // TODO : Construire un index { nom: user } avec Object.fromEntries
+  return {};
+}
+
+function statsActifs(users: TeamMember[]): { total: number; actifs: number } {
+  // TODO : Utiliser Object.keys / Object.values sur l'index
+  // total = nombre total d'utilisateurs
+  // actifs = nombre d'utilisateurs actifs
+  return { total: 0, actifs: 0 };
+}
+
+console.log("Actifs:", nomsActifs(team), "(attendu: [Alice, Chloe, Dina])");
+console.log("Groupes:", grouperNomsParRole(team));
+console.log(
+  "Resume:",
+  resumeRoles(grouperNomsParRole(team)),
+  "(attendu: admin:1, editor:1, reader:1)",
+);
+console.log(
+  "Roles uniques:",
+  rolesUniques(team),
+  "(attendu: [admin, editor, reader])",
+);
+console.log("Index par nom:", indexParNom(team));
+console.log(
+  "Stats actifs:",
+  statsActifs(team),
+  "(attendu: { total: 4, actifs: 3 })",
+);
 
 // =============================================================================
 // PARTIE 1 : Debounce & Throttle
@@ -52,7 +84,10 @@ console.log('Resume:', resumeRoles(grouperNomsParRole(team)), '(attendu: admin:1
 
 console.log("--- Partie 1 : Debounce & Throttle ---");
 
-function debounce<T extends (...args: any[]) => void>(fn: T, delayMs: number): T {
+function debounce<T extends (...args: any[]) => void>(
+  fn: T,
+  delayMs: number,
+): T {
   // TODO : Retarder l'exécution de fn jusqu'à ce qu'il n'y ait plus d'appel
   // pendant delayMs millisecondes.
   // À chaque appel : annuler le timer précédent, lancer un nouveau setTimeout
@@ -60,7 +95,10 @@ function debounce<T extends (...args: any[]) => void>(fn: T, delayMs: number): T
   return fn; // À modifier
 }
 
-function throttle<T extends (...args: any[]) => void>(fn: T, intervalMs: number): T {
+function throttle<T extends (...args: any[]) => void>(
+  fn: T,
+  intervalMs: number,
+): T {
   // TODO : Garantir que fn s'exécute au maximum une fois par intervalMs
   // Utiliser un booléen `waiting` : si true, ignorer l'appel
   // Après exécution, mettre waiting=true et setTimeout pour le réinitialiser
@@ -70,16 +108,24 @@ function throttle<T extends (...args: any[]) => void>(fn: T, intervalMs: number)
 
 // Test debounce
 let debounceCount = 0;
-const debouncedFn = debounce(() => { debounceCount++; }, 100);
-debouncedFn(); debouncedFn(); debouncedFn();
-await new Promise(r => setTimeout(r, 150));
+const debouncedFn = debounce(() => {
+  debounceCount++;
+}, 100);
+debouncedFn();
+debouncedFn();
+debouncedFn();
+await new Promise((r) => setTimeout(r, 150));
 console.log(`Debounce: appelé 3x, exécuté ${debounceCount}x (attendu: 1)`);
 
 // Test throttle
 let throttleCount = 0;
-const throttledFn = throttle(() => { throttleCount++; }, 100);
-throttledFn(); throttledFn(); throttledFn();
-await new Promise(r => setTimeout(r, 250));
+const throttledFn = throttle(() => {
+  throttleCount++;
+}, 100);
+throttledFn();
+throttledFn();
+throttledFn();
+await new Promise((r) => setTimeout(r, 250));
 throttledFn();
 console.log(`Throttle: appelé 4x, exécuté ${throttleCount}x (attendu: 2)`);
 
@@ -94,7 +140,7 @@ class LRUCache<K, V> {
 
   constructor(
     private capacity: number,
-    private ttlMs: number = Infinity
+    private ttlMs: number = Infinity,
   ) {}
 
   get(key: K): V | undefined {
@@ -117,14 +163,16 @@ class LRUCache<K, V> {
 }
 
 const cache = new LRUCache<string, number>(3, 500);
-cache.set("a", 1); cache.set("b", 2); cache.set("c", 3);
+cache.set("a", 1);
+cache.set("b", 2);
+cache.set("c", 3);
 console.log("get(a):", cache.get("a")); // 1
 cache.set("d", 4); // éjecte "b" (LRU car "a" a été accédé)
 console.log("get(b):", cache.get("b")); // undefined (éjecté)
-console.log("size:", cache.size);       // 3
+console.log("size:", cache.size); // 3
 
 // Test TTL
-await new Promise(r => setTimeout(r, 600));
+await new Promise((r) => setTimeout(r, 600));
 console.log("get(a) après TTL:", cache.get("a")); // undefined (expiré)
 
 // =============================================================================
@@ -139,7 +187,7 @@ class TokenBucket {
 
   constructor(
     private capacity: number,
-    private refillRate: number // tokens par seconde
+    private refillRate: number, // tokens par seconde
   ) {
     this.tokens = capacity;
     this.lastRefill = Date.now();
@@ -163,7 +211,7 @@ class TokenBucket {
 const bucket = new TokenBucket(5, 2); // 5 max, recharge 2/sec
 console.log("consume 1:", bucket.tryConsume(1)); // true
 console.log("consume 3:", bucket.tryConsume(3)); // true
-console.log("available:", bucket.available);      // 1
+console.log("available:", bucket.available); // 1
 console.log("consume 3:", bucket.tryConsume(3)); // false (pas assez)
 
 // =============================================================================
@@ -181,7 +229,7 @@ interface PaginatedResult<T> {
 function paginateCursor<T extends { id: number }>(
   items: T[],
   cursor: string | null,
-  limit: number
+  limit: number,
 ): PaginatedResult<T> {
   // TODO : Paginer les items en utilisant un curseur opaque
   // Le curseur est un id encodé en base64 : btoa(String(id))
@@ -197,9 +245,19 @@ const products = Array.from({ length: 20 }, (_, i) => ({
 }));
 
 let page = paginateCursor(products, null, 5);
-console.log("Page 1:", page.data.map(p => p.name), "hasMore:", page.hasMore);
+console.log(
+  "Page 1:",
+  page.data.map((p) => p.name),
+  "hasMore:",
+  page.hasMore,
+);
 
 page = paginateCursor(products, page.nextCursor, 5);
-console.log("Page 2:", page.data.map(p => p.name), "hasMore:", page.hasMore);
+console.log(
+  "Page 2:",
+  page.data.map((p) => p.name),
+  "hasMore:",
+  page.hasMore,
+);
 
 console.log("\n=== Fin du Lab 11 ===");

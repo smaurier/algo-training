@@ -15,19 +15,19 @@ console.log("--- Partie 0 : Rappels JS natifs ---");
 interface TeamMember {
   id: number;
   nom: string;
-  role: 'admin' | 'editor' | 'reader';
+  role: "admin" | "editor" | "reader";
   actif: boolean;
 }
 
 const team: TeamMember[] = [
-  { id: 1, nom: 'Alice', role: 'admin', actif: true },
-  { id: 2, nom: 'Bob', role: 'editor', actif: false },
-  { id: 3, nom: 'Chloe', role: 'editor', actif: true },
-  { id: 4, nom: 'Dina', role: 'reader', actif: true },
+  { id: 1, nom: "Alice", role: "admin", actif: true },
+  { id: 2, nom: "Bob", role: "editor", actif: false },
+  { id: 3, nom: "Chloe", role: "editor", actif: true },
+  { id: 4, nom: "Dina", role: "reader", actif: true },
 ];
 
 function nomsActifs(users: TeamMember[]): string[] {
-  return users.filter(user => user.actif).map(user => user.nom);
+  return users.filter((user) => user.actif).map((user) => user.nom);
 }
 
 function grouperNomsParRole(users: TeamMember[]): Record<string, string[]> {
@@ -42,12 +42,42 @@ function grouperNomsParRole(users: TeamMember[]): Record<string, string[]> {
 function resumeRoles(groupes: Record<string, string[]>): string {
   return Object.entries(groupes)
     .map(([role, noms]) => `${role}:${noms.length}`)
-    .join(', ');
+    .join(", ");
 }
 
-console.log('Actifs:', nomsActifs(team), '(attendu: [Alice, Chloe, Dina])');
-console.log('Groupes:', grouperNomsParRole(team));
-console.log('Resume:', resumeRoles(grouperNomsParRole(team)), '(attendu: admin:1, editor:1, reader:1)');
+function rolesUniques(users: TeamMember[]): string[] {
+  return [...new Set(users.map((user) => user.role))];
+}
+
+function indexParNom(users: TeamMember[]): Record<string, TeamMember> {
+  return Object.fromEntries(users.map((user) => [user.nom, user]));
+}
+
+function statsActifs(users: TeamMember[]): { total: number; actifs: number } {
+  const index = indexParNom(users);
+  const total = Object.keys(index).length;
+  const actifs = Object.values(index).filter((user) => user.actif).length;
+  return { total, actifs };
+}
+
+console.log("Actifs:", nomsActifs(team), "(attendu: [Alice, Chloe, Dina])");
+console.log("Groupes:", grouperNomsParRole(team));
+console.log(
+  "Resume:",
+  resumeRoles(grouperNomsParRole(team)),
+  "(attendu: admin:1, editor:1, reader:1)",
+);
+console.log(
+  "Roles uniques:",
+  rolesUniques(team),
+  "(attendu: [admin, editor, reader])",
+);
+console.log("Index par nom:", indexParNom(team));
+console.log(
+  "Stats actifs:",
+  statsActifs(team),
+  "(attendu: { total: 4, actifs: 3 })",
+);
 
 // =============================================================================
 // PARTIE 1 : Debounce & Throttle
@@ -55,7 +85,10 @@ console.log('Resume:', resumeRoles(grouperNomsParRole(team)), '(attendu: admin:1
 
 console.log("--- Partie 1 : Debounce & Throttle ---");
 
-function debounce<T extends (...args: any[]) => void>(fn: T, delayMs: number): T {
+function debounce<T extends (...args: any[]) => void>(
+  fn: T,
+  delayMs: number,
+): T {
   let timer: ReturnType<typeof setTimeout> | null = null;
   return ((...args: any[]) => {
     if (timer) clearTimeout(timer);
@@ -63,26 +96,39 @@ function debounce<T extends (...args: any[]) => void>(fn: T, delayMs: number): T
   }) as unknown as T;
 }
 
-function throttle<T extends (...args: any[]) => void>(fn: T, intervalMs: number): T {
+function throttle<T extends (...args: any[]) => void>(
+  fn: T,
+  intervalMs: number,
+): T {
   let waiting = false;
   return ((...args: any[]) => {
     if (waiting) return;
     fn(...args);
     waiting = true;
-    setTimeout(() => { waiting = false; }, intervalMs);
+    setTimeout(() => {
+      waiting = false;
+    }, intervalMs);
   }) as unknown as T;
 }
 
 let debounceCount = 0;
-const debouncedFn = debounce(() => { debounceCount++; }, 100);
-debouncedFn(); debouncedFn(); debouncedFn();
-await new Promise(r => setTimeout(r, 150));
+const debouncedFn = debounce(() => {
+  debounceCount++;
+}, 100);
+debouncedFn();
+debouncedFn();
+debouncedFn();
+await new Promise((r) => setTimeout(r, 150));
 console.log(`Debounce: appelé 3x, exécuté ${debounceCount}x`);
 
 let throttleCount = 0;
-const throttledFn = throttle(() => { throttleCount++; }, 100);
-throttledFn(); throttledFn(); throttledFn();
-await new Promise(r => setTimeout(r, 250));
+const throttledFn = throttle(() => {
+  throttleCount++;
+}, 100);
+throttledFn();
+throttledFn();
+throttledFn();
+await new Promise((r) => setTimeout(r, 250));
 throttledFn();
 console.log(`Throttle: appelé 4x, exécuté ${throttleCount}x`);
 
@@ -97,7 +143,7 @@ class LRUCache<K, V> {
 
   constructor(
     private capacity: number,
-    private ttlMs: number = Infinity
+    private ttlMs: number = Infinity,
   ) {}
 
   get(key: K): V | undefined {
@@ -135,13 +181,15 @@ class LRUCache<K, V> {
 }
 
 const cache = new LRUCache<string, number>(3, 500);
-cache.set("a", 1); cache.set("b", 2); cache.set("c", 3);
+cache.set("a", 1);
+cache.set("b", 2);
+cache.set("c", 3);
 console.log("get(a):", cache.get("a"));
 cache.set("d", 4);
 console.log("get(b):", cache.get("b"));
 console.log("size:", cache.size);
 
-await new Promise(r => setTimeout(r, 600));
+await new Promise((r) => setTimeout(r, 600));
 console.log("get(a) après TTL:", cache.get("a"));
 
 // =============================================================================
@@ -156,7 +204,7 @@ class TokenBucket {
 
   constructor(
     private capacity: number,
-    private refillRate: number
+    private refillRate: number,
   ) {
     this.tokens = capacity;
     this.lastRefill = Date.now();
@@ -174,7 +222,10 @@ class TokenBucket {
   private refill(): void {
     const now = Date.now();
     const elapsed = (now - this.lastRefill) / 1000;
-    this.tokens = Math.min(this.capacity, this.tokens + elapsed * this.refillRate);
+    this.tokens = Math.min(
+      this.capacity,
+      this.tokens + elapsed * this.refillRate,
+    );
     this.lastRefill = now;
   }
 
@@ -205,19 +256,20 @@ interface PaginatedResult<T> {
 function paginateCursor<T extends { id: number }>(
   items: T[],
   cursor: string | null,
-  limit: number
+  limit: number,
 ): PaginatedResult<T> {
   let startIndex = 0;
 
   if (cursor) {
     const cursorId = Number(atob(cursor));
-    startIndex = items.findIndex(item => item.id === cursorId) + 1;
+    startIndex = items.findIndex((item) => item.id === cursorId) + 1;
     if (startIndex === 0) startIndex = items.length; // cursor invalide
   }
 
   const data = items.slice(startIndex, startIndex + limit);
   const hasMore = startIndex + limit < items.length;
-  const nextCursor = data.length > 0 ? btoa(String(data[data.length - 1].id)) : null;
+  const nextCursor =
+    data.length > 0 ? btoa(String(data[data.length - 1].id)) : null;
 
   return { data, nextCursor: hasMore ? nextCursor : null, hasMore };
 }
@@ -228,9 +280,19 @@ const products = Array.from({ length: 20 }, (_, i) => ({
 }));
 
 let page = paginateCursor(products, null, 5);
-console.log("Page 1:", page.data.map(p => p.name), "hasMore:", page.hasMore);
+console.log(
+  "Page 1:",
+  page.data.map((p) => p.name),
+  "hasMore:",
+  page.hasMore,
+);
 
 page = paginateCursor(products, page.nextCursor, 5);
-console.log("Page 2:", page.data.map(p => p.name), "hasMore:", page.hasMore);
+console.log(
+  "Page 2:",
+  page.data.map((p) => p.name),
+  "hasMore:",
+  page.hasMore,
+);
 
 console.log("\n=== Fin du Lab 11 ===");
