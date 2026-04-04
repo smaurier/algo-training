@@ -10,6 +10,8 @@ console.log("=== Lab 11 : Patterns Fullstack — Solutions ===\n");
 // PARTIE 0 : Rappels JS natifs (Array/Object)
 // =============================================================================
 
+// JS-REPETITION: object_methods,set,generators_iterators,url_search_params
+
 console.log("--- Partie 0 : Rappels JS natifs ---");
 
 interface TeamMember {
@@ -60,6 +62,32 @@ function statsActifs(users: TeamMember[]): { total: number; actifs: number } {
   return { total, actifs };
 }
 
+function* itererIdsActifs(users: TeamMember[]): IterableIterator<number> {
+  for (const user of users) {
+    if (user.actif) {
+      yield user.id;
+    }
+  }
+}
+
+function construireQueryRecherche(filters: {
+  role?: TeamMember["role"];
+  actif?: boolean;
+  page?: number;
+}): string {
+  const params = new URLSearchParams();
+
+  if (filters.role) params.set("role", filters.role);
+  if (typeof filters.actif === "boolean") {
+    params.set("actif", String(filters.actif));
+  }
+  if (typeof filters.page === "number") {
+    params.set("page", String(filters.page));
+  }
+
+  return params.toString();
+}
+
 console.log("Actifs:", nomsActifs(team), "(attendu: [Alice, Chloe, Dina])");
 console.log("Groupes:", grouperNomsParRole(team));
 console.log(
@@ -77,6 +105,16 @@ console.log(
   "Stats actifs:",
   statsActifs(team),
   "(attendu: { total: 4, actifs: 3 })",
+);
+console.log(
+  "Ids actifs:",
+  Array.from(itererIdsActifs(team)),
+  "(attendu: [1, 3, 4])",
+);
+console.log(
+  "Query recherche:",
+  construireQueryRecherche({ role: "editor", actif: true, page: 2 }),
+  "(attendu: role=editor&actif=true&page=2)",
 );
 
 // =============================================================================

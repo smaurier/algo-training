@@ -10,6 +10,8 @@ console.log("=== Lab 11 : Patterns Fullstack ===\n");
 // PARTIE 0 : Rappels JS natifs (Array/Object)
 // =============================================================================
 
+// JS-REPETITION: object_methods,set,generators_iterators,url_search_params
+
 console.log("--- Partie 0 : Rappels JS natifs ---");
 
 interface TeamMember {
@@ -59,6 +61,22 @@ function statsActifs(users: TeamMember[]): { total: number; actifs: number } {
   return { total: 0, actifs: 0 };
 }
 
+function* itererIdsActifs(users: TeamMember[]): IterableIterator<number> {
+  // TODO : Rappel JS avance — utilisez un generator function avec yield
+  // pour produire les ids des utilisateurs actifs dans l'ordre.
+}
+
+function construireQueryRecherche(filters: {
+  role?: TeamMember["role"];
+  actif?: boolean;
+  page?: number;
+}): string {
+  // TODO : Rappel JS fullstack — utilisez URLSearchParams pour produire
+  // une query string a partir des filtres definis.
+  // Exemple attendu : "role=editor&actif=true&page=2"
+  return "";
+}
+
 console.log("Actifs:", nomsActifs(team), "(attendu: [Alice, Chloe, Dina])");
 console.log("Groupes:", grouperNomsParRole(team));
 console.log(
@@ -76,6 +94,16 @@ console.log(
   "Stats actifs:",
   statsActifs(team),
   "(attendu: { total: 4, actifs: 3 })",
+);
+console.log(
+  "Ids actifs:",
+  Array.from(itererIdsActifs(team)),
+  "(attendu: [1, 3, 4])",
+);
+console.log(
+  "Query recherche:",
+  construireQueryRecherche({ role: "editor", actif: true, page: 2 }),
+  "(attendu: role=editor&actif=true&page=2)",
 );
 
 // =============================================================================
