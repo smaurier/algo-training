@@ -1,723 +1,453 @@
-# Module 04 — Récursion, divide & conquer, recherche dichotomique
-
-> **Objectif** : apprendre à découper un problème en sous-problèmes, exploiter l'ordre pour aller plus vite, et maîtriser la pensée récursive sans tomber dans les pièges classiques.
-
-> **Difficulté** : ⭐⭐⭐
-
-::: info Pas de panique !
-La récursion fait peur à beaucoup de développeurs. En réalité, c'est simplement une fonction qui s'appelle elle-même avec un problème plus petit. Si tu comprends une boucle, tu peux comprendre la récursion — il faut juste penser différemment.
-:::
-
+---
+titre: Récursion, diviser-pour-régner et recherche binaire
+cours: 05-algorithms
+notions: [anatomie d'une récursion, cas de base et cas récursif, call stack, récursion vs itération, stack overflow, tail call non optimisé en V8, diviser-pour-régner, théorème maître intuitif, recherche binaire sur tableau trié, lower bound et upper bound, binary search on answer, pièges mid overflow et conditions de boucle]
+outcomes: [écrire une fonction récursive correcte avec cas de base et convergence, appliquer diviser-pour-régner et estimer sa complexité, implémenter une recherche binaire et ses variantes de bornes sans off-by-one]
+prerequis: [03-stacks-queues-listes]
+next: 05-tris-partition-heaps
+libs: []
+tribuzen: recherche binaire d'un membre dans une liste triée, agrégation divide & conquer de stats familiales, binary-search-on-answer d'un seuil
+last-reviewed: 2026-07
 ---
 
-## Prérequis
+# Récursion, diviser-pour-régner et recherche binaire
 
-- Modules 01-03 terminés
-- Comprendre la call stack (une fonction récursive empile des frames)
-- Savoir ce qu'est O(n), O(n log n), O(log n)
+> **Outcomes — tu sauras FAIRE :** écrire une fonction récursive correcte (cas de base + convergence), appliquer le paradigme diviser-pour-régner et estimer sa complexité, implémenter une recherche binaire et ses variantes de bornes sans te tromper d'une case.
+> **Difficulté :** :star::star::star:
 
----
+## 1. Cas concret d'abord
 
-## 1. La récursion
+Tu intègres l'admin TribuZen. La liste des membres d'une famille est **déjà triée par identifiant** (renvoyée triée par l'API). Un collègue a écrit ceci pour retrouver un membre au clic :
 
-### 1.1 Les trois briques
-
-Toute solution récursive repose sur :
-
-1. **Un cas de base** — la condition d'arrêt (sinon → stack overflow)
-2. **Une réduction** — le problème devient plus petit à chaque appel
-3. **Une garantie de convergence** — on se rapproche du cas de base
-
-```typescript
-// Exemple canonique : factorielle
-function factorial(n: number): number {
-  // 1. Cas de base
-  if (n <= 1) return 1;
-
-  // 2. Réduction + 3. Convergence (n → n-1, se rapproche de 1)
-  return n * factorial(n - 1);
-}
-
-// Déroulé de factorial(5) :
-// factorial(5) = 5 × factorial(4)
-//              = 5 × 4 × factorial(3)
-//              = 5 × 4 × 3 × factorial(2)
-//              = 5 × 4 × 3 × 2 × factorial(1)
-//              = 5 × 4 × 3 × 2 × 1
-//              = 120
-
-// État de la stack au point le plus profond :
-// ┌────────────────┐
-// │ factorial(1)   │ ← sommet (en cours)
-// │ factorial(2)   │
-// │ factorial(3)   │
-// │ factorial(4)   │
-// │ factorial(5)   │ ← base (premier appel)
-// └────────────────┘
-```
-
-### 1.2 Récursion linéaire vs arbre récursif
-
-```typescript
-// Récursion linéaire — un seul appel récursif par étape → O(n) appels
-function sumArray(arr: number[], i = 0): number {
-  if (i >= arr.length) return 0;
-  return arr[i] + sumArray(arr, i + 1);
-}
-
-// Arbre récursif — deux appels par étape → O(2^n) appels
-function fibonacci(n: number): number {
-  if (n <= 1) return n;
-  return fibonacci(n - 1) + fibonacci(n - 2);
-}
-
-// ⚠️ fibonacci(40) fait ~1 milliard d'appels !
-// On verra comment résoudre ça avec la memoization (module 09)
-```
-
-```
-fibonacci(5) — arbre d'appels :
-
-                    fib(5)
-                   /      \
-              fib(4)        fib(3)
-             /     \        /    \
-         fib(3)   fib(2)  fib(2)  fib(1)
-        /    \    /   \   /   \
-    fib(2) fib(1) fib(1) fib(0) fib(1) fib(0)
-    /   \
- fib(1) fib(0)
-
-→ Plein de calculs redondants ! fib(3) est calculé 2 fois, fib(2) 3 fois...
-```
-
-### 1.3 Récursion vs itération
-
-```typescript
-// Règle d'or : si la récursion n'apporte pas de clarté,
-// utilise une boucle.
-
-// ✅ La récursion est naturelle pour :
-// - parcours d'arbres (DOM, catégories, AST)
-// - combinaisons et permutations
-// - divide & conquer (merge sort, quick sort)
-// - backtracking
-
-// ❌ La récursion est inutile pour :
-// - parcours linéaire (utilise for)
-// - accumulation simple (utilise reduce)
-// - itérations avec compteur
-
-// Fibonacci — version itérative (bien meilleure)
-function fibIterative(n: number): number {
-  if (n <= 1) return n;
-  let prev = 0, curr = 1;
-  for (let i = 2; i <= n; i++) {
-    [prev, curr] = [curr, prev + curr];
+```ts
+// membersLookup.ts — AVANT
+function findMember(members: Member[], id: number): Member | null {
+  for (const m of members) {       // parcours linéaire
+    if (m.id === id) return m;
   }
-  return curr;
+  return null;
 }
-// O(n) temps, O(1) espace — vs O(2^n) pour la version récursive naïve
 ```
 
-### 1.4 Pièges de la récursion
+Ça marche. Mais sur les grosses familles synchronisées (plusieurs milliers de membres, et un lookup à chaque survol de ligne dans un tableau virtualisé), ce `O(n)` répété devient le point chaud du profiler.
 
-```typescript
-// Piège 1 — Oublier le cas de base
-function infinite(n: number): number {
-  return n + infinite(n - 1);
-  // ❌ Pas de condition d'arrêt → stack overflow
+**Le tableau est trié.** On jette donc de l'information à chaque appel : on relit des éléments dont on sait déjà qu'ils sont trop petits. Une recherche binaire fait le même travail en `O(log n)` — 4 000 membres, ça passe de ~4 000 comparaisons à ~12.
+
+Ce module te donne trois outils imbriqués : la **pensée récursive** (découper un problème en lui-même en plus petit), le **paradigme diviser-pour-régner** (dont la recherche binaire est le cas le plus simple), et la **recherche binaire** avec ses variantes de bornes — celles qui font vraiment la différence en entretien et en prod.
+
+---
+
+## 2. Théorie complète, concise
+
+### 2.1 Anatomie d'une récursion
+
+Une fonction récursive s'appelle elle-même sur une version **plus petite** du problème. Elle a toujours exactement deux morceaux :
+
+1. **Le cas de base** — la condition d'arrêt, résolue sans récursion. Sans lui : récursion infinie → stack overflow.
+2. **Le cas récursif** — on réduit le problème et on rappelle la fonction, en se **rapprochant** du cas de base (convergence).
+
+```ts
+function factorielle(n: number): number {
+  if (n <= 1) return 1;              // cas de base
+  return n * factorielle(n - 1);     // cas récursif : n → n-1 (converge vers 1)
+}
+```
+
+La convergence est la garantie que tu **atteindras** le cas de base. Un cas récursif qui fait `n - 2` sur un `n` impair ne converge jamais vers `0` : il saute par-dessus.
+
+### 2.2 La call stack (rappel du cours JS runtime)
+
+Chaque appel de fonction empile une **frame** (stack frame) sur la call stack : paramètres, variables locales, adresse de retour. Une frame ne se dépile que quand la fonction `return`. Or un appel récursif se produit **avant** le `return` du parent : les frames s'empilent donc jusqu'au cas de base, puis se dépilent en remontant.
+
+```
+factorielle(4) déroulé — la stack grandit puis rétrécit :
+
+  push factorielle(4)   → attend factorielle(3)
+  push factorielle(3)   → attend factorielle(2)
+  push factorielle(2)   → attend factorielle(1)
+  push factorielle(1)   → cas de base, renvoie 1   ◄── profondeur max
+  pop  → 2 * 1  = 2
+  pop  → 3 * 2  = 6
+  pop  → 4 * 6  = 24
+```
+
+C'est exactement la stack du module 01 (JS runtime). La récursion n'est pas magique : c'est la call stack qui fait le travail de mémorisation des états intermédiaires. Le nombre de frames empilées **en même temps** = la profondeur de récursion = le coût **mémoire** `O(profondeur)`.
+
+### 2.3 Récursion vs itération
+
+Toute récursion peut se réécrire en boucle (avec, au besoin, une stack explicite). Le choix est une question de **clarté**, pas de possibilité.
+
+```ts
+// Récursion naturelle : parcours d'arbre (DOM, catégories, AST)
+function compterNoeuds(node: UINode): number {
+  let total = 1;
+  for (const enfant of node.children ?? []) total += compterNoeuds(enfant);
+  return total;
 }
 
-// Piège 2 — Cas de base qui ne couvre pas tous les cas
-function badBase(n: number): number {
+// Itération naturelle : accumulation linéaire — la récursion n'apporte rien ici
+function somme(arr: number[]): number {
+  let acc = 0;
+  for (const x of arr) acc += x;
+  return acc;
+}
+```
+
+Règle : **récursion** quand la structure est elle-même récursive (arbres, graphes, sous-problèmes qui se divisent). **Itération** pour un simple parcours linéaire ou une accumulation.
+
+### 2.4 Stack overflow et tail calls (non optimisés en V8)
+
+La call stack a une taille limitée (~10 000–15 000 frames selon le moteur). Une récursion trop profonde la fait déborder :
+
+```ts
+function profond(n: number): number {
   if (n === 0) return 0;
-  return n + badBase(n - 2);
-  // ❌ Si n est impair, on passe de 1 à -1 sans jamais toucher 0
+  return 1 + profond(n - 1);
 }
+profond(100_000); // ❌ RangeError: Maximum call stack size exceeded
+```
 
-// Piège 3 — Récursion trop profonde
-// JavaScript a une limite de stack (~10 000-15 000 frames)
-function deepRecursion(n: number): number {
-  if (n === 0) return 0;
-  return 1 + deepRecursion(n - 1);
-}
-// deepRecursion(100_000) → RangeError: Maximum call stack size exceeded
+Un **tail call** (appel terminal) est un appel récursif qui est la **toute dernière** opération de la fonction — rien ne reste à faire au retour. En théorie, le moteur pourrait réutiliser la frame courante au lieu d'en empiler une nouvelle (**Tail Call Optimization**, TCO). C'est dans la spec ES2015.
 
-// Solution : convertir en itératif ou utiliser une trampoline
-function deepIterative(n: number): number {
-  let count = 0;
-  for (let i = n; i > 0; i--) count++;
-  return count;
+```ts
+// Forme tail-recursive : l'accumulateur porte le résultat, l'appel est terminal
+function factTail(n: number, acc = 1): number {
+  if (n <= 1) return acc;
+  return factTail(n - 1, n * acc); // dernière opération = l'appel lui-même
 }
 ```
 
----
+> **À retenir absolument :** V8 (Chrome, Node) **n'implémente pas** la TCO. Seul JavaScriptCore (Safari) l'a fait. Donc en Node, `factTail(100_000)` déborde **quand même**. Ne compte jamais sur la TCO en JS : pour une récursion profonde, **convertis en boucle** ou utilise un trampoline (une boucle qui appelle des fonctions renvoyant la prochaine étape).
 
-## 2. Divide & conquer
+### 2.5 Diviser-pour-régner (le paradigme)
 
-### 2.1 Le principe
-
-```
-┌──────────────────────────────────────────────────┐
-│  1. DIVISER    → couper le problème en morceaux  │
-│  2. RÉSOUDRE   → résoudre chaque morceau         │
-│  3. COMBINER   → fusionner les résultats         │
-└──────────────────────────────────────────────────┘
-```
-
-### 2.2 Merge sort — l'exemple parfait
-
-```typescript
-function mergeSort(arr: number[]): number[] {
-  // Cas de base : un tableau de 0 ou 1 élément est déjà trié
-  if (arr.length <= 1) return arr;
-
-  // 1. DIVISER — couper en deux moitiés
-  const mid = Math.floor(arr.length / 2);
-  const left = arr.slice(0, mid);
-  const right = arr.slice(mid);
-
-  // 2. RÉSOUDRE — trier chaque moitié récursivement
-  const sortedLeft = mergeSort(left);
-  const sortedRight = mergeSort(right);
-
-  // 3. COMBINER — fusionner les deux moitiés triées
-  return merge(sortedLeft, sortedRight);
-}
-
-function merge(a: number[], b: number[]): number[] {
-  const result: number[] = [];
-  let i = 0, j = 0;
-
-  while (i < a.length && j < b.length) {
-    if (a[i] <= b[j]) {
-      result.push(a[i++]);
-    } else {
-      result.push(b[j++]);
-    }
-  }
-
-  // Ajouter les éléments restants
-  while (i < a.length) result.push(a[i++]);
-  while (j < b.length) result.push(b[j++]);
-
-  return result;
-}
-
-console.log(mergeSort([38, 27, 43, 3, 9, 82, 10]));
-// [3, 9, 10, 27, 38, 43, 82]
-
-// Complexité :
-// - Diviser : O(log n) niveaux de récursion
-// - À chaque niveau : O(n) de travail (merge)
-// - Total : O(n log n) — garanti, même dans le pire cas
-// - Espace : O(n) — les tableaux temporaires
-```
+Diviser-pour-régner (*divide & conquer*) est une famille de récursions en trois temps :
 
 ```
-Déroulé de mergeSort([38, 27, 43, 3, 9, 82, 10]) :
-
-Niveau 0:  [38, 27, 43, 3, 9, 82, 10]
-              /                    \
-Niveau 1:  [38, 27, 43]        [3, 9, 82, 10]
-            /        \           /          \
-Niveau 2: [38]    [27, 43]    [3, 9]    [82, 10]
-                   /    \      /   \      /    \
-Niveau 3:       [27]   [43]  [3] [9]   [82]  [10]
-
-                   Merge phase (remontée) :
-Niveau 3:       [27]   [43]  [3] [9]   [82]  [10]
-                   \    /      \   /      \    /
-Niveau 2: [38]    [27, 43]    [3, 9]    [10, 82]
-            \        /           \          /
-Niveau 1:  [27, 38, 43]        [3, 9, 10, 82]
-              \                    /
-Niveau 0:  [3, 9, 10, 27, 38, 43, 82]
+1. DIVISER   → couper le problème en sous-problèmes indépendants (souvent 2 moitiés)
+2. RÉGNER    → résoudre chaque sous-problème récursivement
+3. COMBINER  → fusionner les sous-solutions en la solution globale
 ```
 
-### 2.3 Quick sort
+Le merge sort (module 05) en est l'archétype : couper en deux, trier chaque moitié, fusionner. La recherche binaire en est la version **dégénérée** : on divise en deux mais on ne garde **qu'une** moitié — pas de phase « combiner ».
 
-```typescript
-function quickSort(arr: number[]): number[] {
-  if (arr.length <= 1) return arr;
+### 2.6 Le théorème maître (survol intuitif)
 
-  // Choix du pivot (ici : dernier élément — pas optimal mais simple)
-  const pivot = arr[arr.length - 1];
-  const left: number[] = [];
-  const right: number[] = [];
+Comment estimer la complexité d'un divide & conquer sans dérouler à la main ? On écrit la récurrence `T(n) = a·T(n/b) + f(n)` :
 
-  for (let i = 0; i < arr.length - 1; i++) {
-    if (arr[i] <= pivot) left.push(arr[i]);
-    else right.push(arr[i]);
-  }
+- `a` = nombre de sous-appels,
+- `b` = facteur de réduction de la taille,
+- `f(n)` = coût du découpage + de la combinaison à ce niveau.
 
-  return [...quickSort(left), pivot, ...quickSort(right)];
-}
+L'intuition (pas la preuve) : compare le **travail de combinaison** `f(n)` au **travail des feuilles** `n^(log_b a)`.
 
-// Complexité :
-// - Meilleur / moyen : O(n log n) — le pivot divise bien
-// - Pire cas : O(n²) — le pivot est toujours le min ou max
-// - Espace : O(n) pour cette version (O(log n) en version in-place)
-```
+| Cas | Qui domine | Résultat | Exemple |
+|---|---|---|---|
+| Feuilles dominent | `f(n)` petit | `O(n^(log_b a))` | multiplication de matrices |
+| Équilibre | `f(n) ≈ n^(log_b a)` | `O(n^(log_b a) · log n)` | **merge sort** : `2T(n/2)+O(n)` → `O(n log n)` |
+| Racine domine | `f(n)` gros | `O(f(n))` | découpage coûteux |
 
-### 2.4 Merge sort vs Quick sort
+Pour la **recherche binaire** : `T(n) = 1·T(n/2) + O(1)`. Un seul sous-appel, moitié de taille, travail constant → `O(log n)`. C'est la raison mathématique du gain du cas concret.
 
-```
-┌─────────────┬──────────────────────┬──────────────────────┐
-│             │  Merge Sort          │  Quick Sort          │
-├─────────────┼──────────────────────┼──────────────────────┤
-│  Meilleur   │  O(n log n)          │  O(n log n)          │
-│  Moyen      │  O(n log n)          │  O(n log n)          │
-│  Pire       │  O(n log n) ✅       │  O(n²) ⚠️            │
-│  Espace     │  O(n) ❌             │  O(log n) ✅ (in-place)│
-│  Stable     │  Oui ✅              │  Non ❌              │
-│  Cache      │  Moins bon           │  Meilleur            │
-└─────────────┴──────────────────────┴──────────────────────┘
+### 2.7 Recherche binaire sur tableau trié
 
-JavaScript utilise TimSort (hybride merge sort + insertion sort)
-→ O(n log n) garanti, stable, optimisé pour les tableaux "presque triés"
-```
+Prérequis **absolu** : le tableau doit être **trié** (ou l'espace de recherche ordonné). On garde deux bornes `lo`/`hi`, on regarde le milieu, on élimine la moitié impossible.
 
----
-
-## 3. Binary search (recherche dichotomique)
-
-### 3.1 Le principe fondamental
-
-La dichotomie ne sert pas qu'à "chercher dans un tableau trié". C'est un pattern pour **chercher une frontière** dans un espace ordonné.
-
-```typescript
-// Version classique — chercher une valeur exacte
+```ts
+// Recherche exacte : renvoie l'index de target, ou -1
 function binarySearch(arr: number[], target: number): number {
   let lo = 0;
-  let hi = arr.length - 1;
+  let hi = arr.length - 1;          // intervalle FERMÉ [lo, hi]
 
-  while (lo <= hi) {
-    const mid = lo + Math.floor((hi - lo) / 2); // évite l'overflow
+  while (lo <= hi) {                 // <= car hi est inclus
+    const mid = lo + Math.floor((hi - lo) / 2); // anti-overflow (voir §4)
     if (arr[mid] === target) return mid;
-    if (arr[mid] < target) lo = mid + 1;
-    else hi = mid - 1;
+    if (arr[mid] < target) lo = mid + 1;   // cible à droite
+    else hi = mid - 1;                      // cible à gauche
   }
-
-  return -1; // non trouvé
+  return -1;
 }
-
-console.log(binarySearch([1, 3, 5, 7, 9, 11, 13], 7)); // 3
-console.log(binarySearch([1, 3, 5, 7, 9, 11, 13], 6)); // -1
 ```
 
-### 3.2 Déroulé pas à pas
+Le couple `(hi = length - 1, while lo <= hi)` définit un **intervalle fermé** `[lo, hi]`. C'est le style « recherche exacte ». Les variantes de bornes utilisent un **intervalle demi-ouvert**, ci-dessous — et c'est là que 90 % des bugs se logent.
 
-```
-Chercher 7 dans [1, 3, 5, 7, 9, 11, 13] :
+### 2.8 Variantes de bornes — lower bound / upper bound
 
-Étape 1: lo=0, hi=6, mid=3 → arr[3]=7 → trouvé !
+Souvent, la cible peut apparaître **plusieurs fois**, ou pas du tout, et tu veux une **frontière** plutôt qu'une position exacte. Deux réponses canoniques :
 
-Chercher 6 dans [1, 3, 5, 7, 9, 11, 13] :
+- **`lowerBound`** = premier index `i` tel que `arr[i] >= target` (où insérer target à gauche des égaux).
+- **`upperBound`** = premier index `i` tel que `arr[i] > target` (juste après le dernier égal).
 
-Étape 1: lo=0, hi=6, mid=3 → arr[3]=7 > 6 → hi=2
-Étape 2: lo=0, hi=2, mid=1 → arr[1]=3 < 6 → lo=2
-Étape 3: lo=2, hi=2, mid=2 → arr[2]=5 < 6 → lo=3
-Étape 4: lo=3, hi=2 → lo > hi → non trouvé
-```
-
-### 3.3 Variantes importantes
-
-```typescript
-// Variante 1 — Trouver la première position d'insertion (lower bound)
+```ts
+// lower bound — intervalle demi-ouvert [lo, hi), hi = length, while lo < hi
 function lowerBound(arr: number[], target: number): number {
-  let lo = 0, hi = arr.length;
-  while (lo < hi) {
+  let lo = 0, hi = arr.length;          // hi EXCLU
+  while (lo < hi) {                       // < car hi n'est pas un index candidat
     const mid = lo + Math.floor((hi - lo) / 2);
-    if (arr[mid] < target) lo = mid + 1;
-    else hi = mid;
+    if (arr[mid] < target) lo = mid + 1;  // trop petit → strictement à droite
+    else hi = mid;                         // arr[mid] >= target → mid reste candidat
   }
-  return lo; // Premier index où arr[i] >= target
+  return lo; // premier i où arr[i] >= target (peut valoir arr.length)
 }
 
-// Variante 2 — Trouver la dernière position (upper bound)
+// upper bound — même squelette, seule la comparaison change (<= au lieu de <)
 function upperBound(arr: number[], target: number): number {
   let lo = 0, hi = arr.length;
   while (lo < hi) {
     const mid = lo + Math.floor((hi - lo) / 2);
-    if (arr[mid] <= target) lo = mid + 1;
+    if (arr[mid] <= target) lo = mid + 1; // <= : on pousse au-delà des égaux
     else hi = mid;
   }
-  return lo; // Premier index où arr[i] > target
+  return lo; // premier i où arr[i] > target
 }
+```
 
-// Utilisation : compter les occurrences d'une valeur dans un tableau trié
+**Le seul changement entre les deux est `<` vs `<=`.** Mémorise le squelette demi-ouvert (`hi = length`, `while lo < hi`, `hi = mid`, `lo = mid + 1`) : il est plus robuste que le style fermé car il ne peut pas boucler à l'infini tant que `hi = mid` fait strictement rétrécir l'intervalle.
+
+Deux usages directs :
+
+```ts
+// Compter les occurrences d'une valeur dans un tableau trié — O(log n)
 function countOccurrences(arr: number[], target: number): number {
   return upperBound(arr, target) - lowerBound(arr, target);
 }
 
+// Le "search range" LeetCode : [premier, dernier] index de target
+function searchRange(arr: number[], target: number): [number, number] {
+  const lo = lowerBound(arr, target);
+  if (lo === arr.length || arr[lo] !== target) return [-1, -1]; // absent
+  return [lo, upperBound(arr, target) - 1];
+}
+
 const sorted = [1, 2, 2, 2, 3, 4, 5];
-console.log(countOccurrences(sorted, 2)); // 3
-console.log(lowerBound(sorted, 2));       // 1 (premier 2)
-console.log(upperBound(sorted, 2));       // 4 (après le dernier 2)
+countOccurrences(sorted, 2); // 3
+searchRange(sorted, 2);      // [1, 3]
+searchRange(sorted, 9);      // [-1, -1]
 ```
 
-### 3.4 Binary search sur une condition (pas un tableau)
+### 2.9 Binary search on answer
 
-```typescript
-// La dichotomie fonctionne sur tout espace ordonné avec une condition monotone
-// "trouver la première valeur x telle que f(x) est vrai"
+La percée conceptuelle : **la recherche binaire ne dépend pas d'un tableau**. Elle marche sur **tout espace ordonné où une condition est monotone** : `false, false, …, false, true, true, …, true`. On cherche la frontière où ça bascule.
 
-// Exemple : capacité minimale de livraison
-// Tu as n colis avec des poids et d jours pour tout livrer.
-// Quelle est la capacité minimum du camion ?
+Au lieu de chercher *dans* les données, on **binaire-cherche la réponse elle-même** : on devine une valeur candidate `x`, on répond en `O(n)` à « est-ce que `x` est faisable ? », et la monotonie (« si `x` marche, tout `≥ x` marche ») permet de dichotomiser sur `x`.
 
-function minCapacity(weights: number[], days: number): number {
-  let lo = Math.max(...weights); // au minimum le plus gros colis
-  let hi = weights.reduce((s, w) => s + w, 0); // tout en un jour
-
-  while (lo < hi) {
-    const mid = lo + Math.floor((hi - lo) / 2);
-
-    // Peut-on livrer en `days` jours avec capacité `mid` ?
-    if (canDeliver(weights, days, mid)) {
-      hi = mid; // on cherche plus petit
-    } else {
-      lo = mid + 1; // trop petit, on augmente
-    }
-  }
-
-  return lo;
-}
-
-function canDeliver(weights: number[], days: number, capacity: number): boolean {
-  let currentLoad = 0;
-  let daysNeeded = 1;
-
-  for (const w of weights) {
-    if (currentLoad + w > capacity) {
-      daysNeeded++;
-      currentLoad = 0;
-    }
-    currentLoad += w;
-  }
-
-  return daysNeeded <= days;
-}
-
-console.log(minCapacity([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 5)); // 15
-```
-
-### 3.5 Binary search sur réponse (binary search the answer)
-
-```typescript
-// Pattern très puissant : tu ne cherches pas dans un tableau,
-// tu cherches la valeur optimale d'un paramètre.
-
-// Exemple : racine carrée entière
+```ts
+// Racine carrée entière : plus grand x tel que x*x <= n
 function intSqrt(n: number): number {
   let lo = 0, hi = n;
-  let result = 0;
-
-  while (lo <= hi) {
-    const mid = lo + Math.floor((hi - lo) / 2);
-    if (mid * mid <= n) {
-      result = mid;
-      lo = mid + 1;
-    } else {
-      hi = mid - 1;
-    }
-  }
-
-  return result;
-}
-
-console.log(intSqrt(16)); // 4
-console.log(intSqrt(20)); // 4 (4² = 16 ≤ 20 < 25 = 5²)
-
-// Exemple : temps minimum pour compléter n tâches
-// avec k machines ayant des vitesses différentes
-function minTime(speeds: number[], tasks: number): number {
-  let lo = 1;
-  let hi = Math.max(...speeds) * tasks; // worst case : une seule machine
-
   while (lo < hi) {
-    const mid = lo + Math.floor((hi - lo) / 2);
-    // Combien de tâches peut-on faire en `mid` unités de temps ?
-    const done = speeds.reduce((total, speed) => total + Math.floor(mid / speed), 0);
-    if (done >= tasks) hi = mid;
-    else lo = mid + 1;
+    const mid = lo + Math.ceil((hi - lo) / 2); // ceil : on cherche le PLUS GRAND x valide
+    if (mid * mid <= n) lo = mid;              // mid faisable → candidat, on garde
+    else hi = mid - 1;                          // trop grand
   }
-
   return lo;
 }
+intSqrt(16); // 4
+intSqrt(20); // 4  (4²=16 ≤ 20 < 25=5²)
 
-console.log(minTime([2, 3, 7], 10)); // 12
-// En 12 unités : machine 1 fait 6 tâches, machine 2 fait 4, machine 3 fait 1 → 11 ≥ 10 ✅
-```
-
-### 3.6 Pièges du binary search
-
-```typescript
-// Piège 1 — Off-by-one dans les bornes
-// lo <= hi (avec hi = arr.length - 1) vs lo < hi (avec hi = arr.length)
-// → être consistant et tester les cas limites
-
-// Piège 2 — Integer overflow au calcul du mid
-// ❌ const mid = (lo + hi) / 2;           // peut overflow en C/Java
-// ✅ const mid = lo + Math.floor((hi - lo) / 2);  // safe
-
-// Piège 3 — Boucle infinie quand lo = hi - 1
-// Quand l'espace est de taille 2, vérifier que mid progresse
-// Toujours s'assurer que lo ou hi change à chaque itération
-
-// Piège 4 — Tableau non trié
-// La dichotomie ne fonctionne QUE sur un espace ordonné
-// ou une condition monotone (false, false, ..., true, true, ...)
-```
-
----
-
-## 4. Applications terrain
-
-### 4.1 Recherche dans une API paginée
-
-```typescript
-// Tu as une API de produits triés par prix.
-// Tu cherches le premier produit au-dessus de 50€.
-// Au lieu de parcourir toutes les pages, tu peux faire une dichotomie.
-
-interface PaginatedResponse {
-  items: { id: string; price: number }[];
-  hasMore: boolean;
-}
-
-async function findFirstAbovePrice(
-  fetchPage: (page: number) => Promise<PaginatedResponse>,
-  targetPrice: number,
-  totalPages: number,
-): Promise<{ id: string; price: number } | null> {
-  let lo = 0, hi = totalPages - 1;
-
+// Capacité minimale d'un camion pour livrer tous les colis en `days` jours.
+// Le prédicat canDeliver(cap) est monotone : plus la capacité est grande, plus c'est faisable.
+function minCapacity(weights: number[], days: number): number {
+  let lo = Math.max(...weights);              // au moins le plus gros colis
+  let hi = weights.reduce((s, w) => s + w, 0); // tout en un jour
   while (lo < hi) {
     const mid = lo + Math.floor((hi - lo) / 2);
-    const page = await fetchPage(mid);
-    const lastItem = page.items[page.items.length - 1];
-
-    if (lastItem.price < targetPrice) {
-      lo = mid + 1;
-    } else {
-      hi = mid;
-    }
+    if (canDeliver(weights, days, mid)) hi = mid; // faisable → on tente plus petit
+    else lo = mid + 1;                             // infaisable → il faut plus grand
   }
-
-  const page = await fetchPage(lo);
-  return page.items.find(item => item.price >= targetPrice) ?? null;
+  return lo; // plus petite capacité faisable
 }
+
+function canDeliver(weights: number[], days: number, cap: number): boolean {
+  let load = 0, need = 1;
+  for (const w of weights) {
+    if (load + w > cap) { need++; load = 0; }
+    load += w;
+  }
+  return need <= days;
+}
+minCapacity([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 5); // 15
 ```
 
-### 4.2 Récursion sur un arbre DOM
-
-```typescript
-// Trouver tous les éléments textuels dans un arbre de composants
-interface UINode {
-  type: string;
-  text?: string;
-  children?: UINode[];
-}
-
-function findAllText(node: UINode): string[] {
-  const texts: string[] = [];
-
-  if (node.text) texts.push(node.text);
-
-  for (const child of node.children ?? []) {
-    texts.push(...findAllText(child)); // récursion naturelle sur l'arbre
-  }
-
-  return texts;
-}
-```
+Le squelette est identique à `lowerBound` : on cherche le premier `x` où le prédicat devient vrai. Reconnaître un problème d'optimisation comme un « binary search on answer » est l'un des réflexes les plus rentables du répertoire algo.
 
 ---
 
-## Démonstrations
+## 3. Worked examples
 
-### Demo 1 — Merge sort sur des objets (tri stable)
+### Exemple 1 — Dérouler `lowerBound` pas à pas
 
-```typescript
-interface Student { name: string; grade: number }
+`lowerBound([1, 2, 2, 2, 3], 2)` — on cherche le **premier** index où `arr[i] >= 2`.
 
-function mergeSortBy<T>(arr: T[], compareFn: (a: T, b: T) => number): T[] {
-  if (arr.length <= 1) return arr;
-  const mid = Math.floor(arr.length / 2);
-  const left = mergeSortBy(arr.slice(0, mid), compareFn);
-  const right = mergeSortBy(arr.slice(mid), compareFn);
-  return mergeBy(left, right, compareFn);
+```
+Départ : lo=0, hi=5 (length), intervalle [0,5)
+
+Itér 1 : mid = 0 + (5-0)/2 = 2 ; arr[2]=2 ; 2 < 2 ? non → hi = mid = 2
+Itér 2 : mid = 0 + (2-0)/2 = 1 ; arr[1]=2 ; 2 < 2 ? non → hi = mid = 1
+Itér 3 : mid = 0 + (1-0)/2 = 0 ; arr[0]=1 ; 1 < 2 ? oui → lo = mid + 1 = 1
+Sortie : lo == hi == 1 → renvoie 1
+```
+
+Index 1 = le premier `2`. Vérifie la cohérence : `upperBound(..., 2)` renverrait 4 (après le dernier 2), donc `countOccurrences = 4 - 1 = 3`. ✓
+
+**Ce qu'il faut voir :** l'intervalle rétrécit **strictement** à chaque tour (`hi = mid` avec `mid < hi`, ou `lo = mid + 1`). C'est la garantie anti-boucle-infinie du style demi-ouvert.
+
+### Exemple 2 — Diviser-pour-régner : agréger des stats familiales
+
+Tu veux le total des points de sérénité d'une grande famille TribuZen, calculé en divide & conquer (préfiguration d'un calcul parallélisable / segment tree du module 06).
+
+```ts
+interface Member { id: number; serenityPoints: number }
+
+// DIVISER en deux moitiés, RÉGNER sur chacune, COMBINER par addition.
+// T(n) = 2·T(n/2) + O(1)  → par le théorème maître, cas d'équilibre dégénéré → O(n).
+function sumSerenity(members: Member[], lo = 0, hi = members.length - 1): number {
+  // Cas de base : segment vide ou singleton
+  if (lo > hi) return 0;
+  if (lo === hi) return members[lo].serenityPoints;
+
+  const mid = lo + Math.floor((hi - lo) / 2); // DIVISER
+  const left = sumSerenity(members, lo, mid);      // RÉGNER (gauche)
+  const right = sumSerenity(members, mid + 1, hi); // RÉGNER (droite)
+  return left + right;                              // COMBINER
 }
 
-function mergeBy<T>(a: T[], b: T[], compareFn: (a: T, b: T) => number): T[] {
-  const result: T[] = [];
-  let i = 0, j = 0;
-  while (i < a.length && j < b.length) {
-    if (compareFn(a[i], b[j]) <= 0) result.push(a[i++]);
-    else result.push(b[j++]);
-  }
-  while (i < a.length) result.push(a[i++]);
-  while (j < b.length) result.push(b[j++]);
-  return result;
-}
-
-const students: Student[] = [
-  { name: 'Alice', grade: 15 },
-  { name: 'Bob', grade: 12 },
-  { name: 'Charlie', grade: 15 },
-  { name: 'Diana', grade: 12 },
+const famille: Member[] = [
+  { id: 1, serenityPoints: 12 },
+  { id: 2, serenityPoints: 7 },
+  { id: 3, serenityPoints: 20 },
+  { id: 4, serenityPoints: 5 },
 ];
-
-const sorted = mergeSortBy(students, (a, b) => b.grade - a.grade);
-console.log(sorted.map(s => `${s.name}(${s.grade})`));
-// ['Alice(15)', 'Charlie(15)', 'Bob(12)', 'Diana(12)']
-// Tri STABLE : Alice reste avant Charlie (même note), Bob reste avant Diana
+sumSerenity(famille); // 44
 ```
 
-### Demo 2 — Binary search pour trouver un commit cassé (git bisect)
+Ici l'addition est associative, donc l'ordre de combinaison n'importe pas — c'est **exactement** ce qui rend un agrégat parallélisable (chaque moitié pourrait tourner sur un worker séparé). La profondeur de récursion est `O(log n)`, donc la mémoire stack aussi.
 
-```typescript
-// git bisect fait exactement une recherche dichotomique !
-// Tu as N commits. Un bug a été introduit entre le commit 0 (bon) et N-1 (cassé).
-// Trouver le premier commit cassé en O(log n) tests.
+---
 
-function gitBisect(
-  commits: string[],
-  isBroken: (commit: string) => boolean,
-): string {
-  let lo = 0, hi = commits.length - 1;
+## 4. Pièges & misconceptions
 
-  while (lo < hi) {
-    const mid = lo + Math.floor((hi - lo) / 2);
-    if (isBroken(commits[mid])) {
-      hi = mid;     // le bug est au mid ou avant
-    } else {
-      lo = mid + 1; // le bug est après
-    }
-  }
+### PIÈGE #1 — `mid` overflow / division non entière
 
-  return commits[lo]; // premier commit cassé
-}
+```ts
+// ❌ En JS ça ne "déborde" pas (Number est un flottant 64 bits) mais (lo+hi) peut
+//    perdre en précision au-delà de 2^53, et surtout ce code est faux ailleurs (C/Java overflow).
+const mid = (lo + hi) / 2;         // + oubli du Math.floor → index fractionnaire !
 
-const commits = ['abc123', 'def456', 'ghi789', 'jkl012', 'mno345'];
-// Supposons que le bug est introduit au commit 'ghi789'
-const broken = gitBisect(commits, c => ['ghi789', 'jkl012', 'mno345'].includes(c));
-console.log(`Premier commit cassé : ${broken}`); // 'ghi789'
-// Seulement ~log2(5) = 3 tests au lieu de 5
+// ✅ Idiome universel, sûr partout, et entier :
+const mid = lo + Math.floor((hi - lo) / 2);
 ```
 
-### Demo 3 — Trampoline pour éviter le stack overflow
+`(hi - lo)` ne peut pas déborder (c'est plus petit que `hi`), et `lo + …` reste dans les bornes. Prends cette forme comme réflexe même en JS : c'est celle qu'on attend en entretien.
 
-```typescript
-// Technique pour exécuter de la "récursion" sans empiler de frames
+### PIÈGE #2 — Mélanger le style fermé et le style demi-ouvert
 
-type Thunk<T> = () => T | Thunk<T>;
-
-function trampoline<T>(fn: Thunk<T>): T {
-  let result: any = fn;
-  while (typeof result === 'function') {
-    result = result();
-  }
-  return result;
+```ts
+// ❌ hi = length - 1 (fermé) MAIS hi = mid (demi-ouvert) → off-by-one / boucle infinie
+let lo = 0, hi = arr.length - 1;
+while (lo < hi) {
+  const mid = lo + Math.floor((hi - lo) / 2);
+  if (arr[mid] < target) lo = mid + 1;
+  else hi = mid; // incohérent avec hi = length - 1
 }
+```
 
-// Factorielle avec trampoline — pas de stack overflow
-function factTrampoline(n: number, acc = 1): number | (() => number | (() => any)) {
-  if (n <= 1) return acc;
-  return () => factTrampoline(n - 1, n * acc);
+Choisis **un** style et garde-le entier :
+- **Fermé** `[lo, hi]` : `hi = length - 1`, `while lo <= hi`, on écrit `hi = mid - 1` / `lo = mid + 1`.
+- **Demi-ouvert** `[lo, hi)` : `hi = length`, `while lo < hi`, on écrit `hi = mid` / `lo = mid + 1`.
+
+Pour les bornes (lower/upper) et le binary-search-on-answer, prends **toujours** le demi-ouvert : il est plus dur à casser.
+
+### PIÈGE #3 — Boucle infinie quand l'intervalle ne rétrécit pas
+
+```ts
+// ❌ avec lo < hi et lo = mid (au lieu de mid+1), si mid == lo l'intervalle stagne
+while (lo < hi) {
+  const mid = lo + Math.floor((hi - lo) / 2); // arrondi vers le bas → mid peut == lo
+  if (cond(mid)) lo = mid;  // 🔁 lo ne bouge pas quand mid == lo → boucle infinie
+  else hi = mid - 1;
 }
+// ✅ Si tu dois faire lo = mid (chercher le PLUS GRAND valide), arrondis vers le HAUT :
+const mid = lo + Math.ceil((hi - lo) / 2); // biaise mid vers hi → progression garantie
+```
 
-console.log(trampoline(() => factTrampoline(100_000)));
-// Fonctionne même pour n = 100 000 ! (résultat = Infinity car trop grand)
+Règle mnémonique : **`lo = mid` exige `Math.ceil`**, **`hi = mid` va avec `Math.floor`**. Sinon un des deux côtés stagne quand l'intervalle est de taille 2.
+
+### PIÈGE #4 — Recherche binaire sur données non triées
+
+La dichotomie suppose la **monotonie**. Sur un tableau non trié, elle renvoie n'importe quoi (pas une erreur — un faux négatif silencieux, le pire des bugs).
+
+```ts
+binarySearch([3, 1, 2], 1); // -1 alors que 1 est présent — données non triées !
+```
+
+Avant toute recherche binaire : **audite l'invariant de tri**. Si les données arrivent d'une API « triée par X », vérifie que c'est bien le champ sur lequel tu cherches.
+
+### PIÈGE #5 — Compter sur la TCO en Node
+
+```ts
+// ❌ "C'est tail-recursive, donc pas de stack overflow" — FAUX en V8 (Node/Chrome)
+factTail(200_000); // RangeError malgré la forme terminale
+```
+
+V8 n'optimise pas les tail calls. Récursion profonde en Node = convertis en boucle ou trampoline. Ne suppose la TCO nulle part sauf test explicite sur le moteur cible.
+
+---
+
+## 5. Ancrage TribuZen
+
+Les trois formes de dichotomie de ce module correspondent à trois besoins réels de l'app.
+
+**Recherche binaire d'un membre (liste triée).** L'API renvoie les membres d'une famille triés par `id`. Le `findMember` linéaire du cas concret devient un `binarySearch` `O(log n)` dans `src/features/members/lookup.ts`. Utilisé à chaque survol de ligne dans la table virtualisée de l'admin — c'est le point chaud du cas concret.
+
+**Diviser-pour-régner sur une agrégation de stats familiales.** Le tableau de bord d'une famille agrège des scores (points de sérénité, activités complétées) sur potentiellement des milliers de membres. `sumSerenity` (Exemple 2) est la forme divide & conquer, associative donc parallélisable — préfiguration du segment tree (module 06) quand les stats deviendront incrémentales (mises à jour en `O(log n)` plutôt que recalcul complet).
+
+**Binary-search-on-answer pour un seuil.** Fonctionnalité « quel seuil de points débloque au plus 20 % des familles le badge Or ? ». On cherche le plus petit seuil `s` tel que `nbFamillesAuDessus(s) <= 0.2 * total`. Le prédicat est monotone en `s` → binary search on answer sur `s` dans `src/features/badges/threshold.ts`, au lieu de balayer toutes les valeurs possibles.
+
+Fichiers cibles dans `smaurier/tribuzen` :
+
+```
+tribuzen/src/features/
+  members/
+    lookup.ts        ← binarySearch + lowerBound (membre par id trié)
+  stats/
+    aggregate.ts     ← sumSerenity (divide & conquer associatif)
+  badges/
+    threshold.ts     ← binarySearchOnAnswer (seuil monotone)
 ```
 
 ---
 
-## Points clés
+## 6. Points clés
 
-1. La récursion = cas de base + réduction + convergence.
-2. Arbre récursif (2 branches) = $O(2^n)$ — souvent trop lent sans memoization.
-3. Divide & conquer = diviser + résoudre + combiner → $O(n \log n)$ typiquement.
-4. Merge sort est le modèle parfait de divide & conquer — $O(n \log n)$ garanti, stable.
-5. Binary search fonctionne sur tout espace **ordonné avec condition monotone**, pas que sur les tableaux.
-6. Lower bound / upper bound sont des variantes essentielles de la dichotomie.
-7. "Binary search the answer" : chercher le paramètre optimal au lieu de chercher dans un tableau.
-8. Attention aux pièges : off-by-one, boucle infinie, stack overflow pour les récursions profondes.
-9. La récursion est naturelle pour les arbres et les combinaisons, inutile pour les parcours linéaires.
-10. Tout algorithme récursif peut être converti en itératif avec une stack explicite ou un trampoline.
-
----
-
-## Pour aller plus loin
-
-- [MDN — Recursion](https://developer.mozilla.org/en-US/docs/Glossary/Recursion) — fondamentaux
-- [Visualgo — Sorting](https://visualgo.net/en/sorting) — merge sort / quick sort animés
-- [Binary Search — A Different Perspective](https://www.topcoder.com/thrive/articles/Binary%20Search) — article détaillé
-- [Brilliant — Divide and Conquer](https://brilliant.org/wiki/divide-and-conquer/) — exemples avancés
-- [JavaScript.info — Recursion](https://javascript.info/recursion) — tutoriel progressif
+1. Une récursion = cas de base (arrêt) + cas récursif qui **converge** vers le cas de base ; sans convergence, stack overflow.
+2. La call stack empile une frame par appel non terminé ; la profondeur de récursion = coût mémoire `O(profondeur)`.
+3. Récursion pour les structures récursives (arbres), itération pour les parcours linéaires — c'est un choix de clarté.
+4. V8 (Node/Chrome) **n'optimise pas** les tail calls : une récursion profonde déborde même sous forme terminale → convertir en boucle.
+5. Diviser-pour-régner = diviser + régner + combiner ; le théorème maître (`T(n)=a·T(n/b)+f(n)`) estime la complexité par comparaison feuilles vs combinaison.
+6. Recherche binaire = `O(log n)` sur tout espace **ordonné à condition monotone**, pas seulement un tableau.
+7. Style fermé `[lo,hi]` (`hi=len-1`, `lo<=hi`, `±1`) vs demi-ouvert `[lo,hi)` (`hi=len`, `lo<hi`, `hi=mid`) — ne jamais mélanger les deux.
+8. `lowerBound` (premier `>= target`) et `upperBound` (premier `> target`) ne diffèrent que par `<` vs `<=` ; leur différence = nombre d'occurrences.
+9. « Binary search on answer » : dichotomiser sur la réponse via un prédicat monotone faisable/infaisable.
+10. Pièges : `mid = lo + Math.floor((hi-lo)/2)` ; `lo=mid` exige `Math.ceil` ; jamais de dichotomie sur données non triées.
 
 ---
 
-## Si tu es perdu
+## 7. Seeds Anki
 
-1. Récursion = une fonction qui s'appelle elle-même avec un problème **plus petit**.
-2. Sans condition d'arrêt → stack overflow.
-3. Binary search = diviser par 2 à chaque étape → $O(\log n)$.
-4. Merge sort = couper-trier-fusionner → $O(n \log n)$.
-5. En cas de doute, dessine l'arbre d'appels sur papier.
-
----
-
-## Défi
-
-> Implémente `searchRange(nums: number[], target: number): [number, number]` qui retourne le premier et le dernier index d'une valeur dans un tableau trié. Si la valeur n'existe pas, retourne `[-1, -1]`. Contrainte : $O(\log n)$.
-
-<details>
-<summary>Réponse</summary>
-
-```typescript
-function searchRange(nums: number[], target: number): [number, number] {
-  const first = findFirst(nums, target);
-  if (first === -1) return [-1, -1];
-  const last = findLast(nums, target);
-  return [first, last];
-}
-
-function findFirst(nums: number[], target: number): number {
-  let lo = 0, hi = nums.length - 1, result = -1;
-  while (lo <= hi) {
-    const mid = lo + Math.floor((hi - lo) / 2);
-    if (nums[mid] === target) { result = mid; hi = mid - 1; }
-    else if (nums[mid] < target) lo = mid + 1;
-    else hi = mid - 1;
-  }
-  return result;
-}
-
-function findLast(nums: number[], target: number): number {
-  let lo = 0, hi = nums.length - 1, result = -1;
-  while (lo <= hi) {
-    const mid = lo + Math.floor((hi - lo) / 2);
-    if (nums[mid] === target) { result = mid; lo = mid + 1; }
-    else if (nums[mid] < target) lo = mid + 1;
-    else hi = mid - 1;
-  }
-  return result;
-}
-
-console.log(searchRange([5, 7, 7, 8, 8, 10], 8)); // [3, 4]
-console.log(searchRange([5, 7, 7, 8, 8, 10], 6)); // [-1, -1]
-
-// Deux binary searches → O(log n) + O(log n) = O(log n)
+```
+Quels sont les deux composants obligatoires d'une fonction récursive ?|Un cas de base (condition d'arrêt résolue sans récursion) et un cas récursif qui réduit le problème en convergeant vers le cas de base. Sans convergence vers la base → stack overflow.
+Pourquoi la profondeur d'une récursion est-elle un coût mémoire ?|Chaque appel non terminé laisse une frame empilée sur la call stack (params, locales, retour). La profondeur maximale = nombre de frames simultanées = O(profondeur) en mémoire.
+V8 optimise-t-il les tail calls (TCO) ?|Non. Malgré la spec ES2015, V8 (Node, Chrome) n'implémente pas la TCO — seul JavaScriptCore/Safari le fait. Une récursion terminale profonde déborde quand même en Node ; il faut convertir en boucle ou trampoline.
+Quelles sont les trois étapes du paradigme diviser-pour-régner ?|Diviser (couper en sous-problèmes indépendants), régner (résoudre chaque sous-problème récursivement), combiner (fusionner les sous-solutions). Ex : merge sort. La recherche binaire est le cas dégénéré (on ne garde qu'une moitié, pas de combinaison).
+Sur quoi la recherche binaire peut-elle opérer, au-delà d'un tableau trié ?|Tout espace ordonné avec une condition monotone (false…false,true…true). On cherche la frontière de bascule. C'est le principe du "binary search on answer" : dichotomiser sur une réponse candidate via un prédicat faisable/infaisable monotone.
+Quelle est la différence entre lowerBound et upperBound ?|lowerBound = premier index i où arr[i] >= target ; upperBound = premier index i où arr[i] > target. Le seul changement de code est arr[mid] < target (lower) vs arr[mid] <= target (upper). Leur différence = nombre d'occurrences de target.
+Comment calcule-t-on mid sans risque, et quelle est la règle ceil/floor ?|mid = lo + Math.floor((hi - lo) / 2) évite l'overflow et reste entier. Règle : si on écrit hi = mid on garde Math.floor ; si on écrit lo = mid (chercher le plus grand valide) on doit prendre Math.ceil, sinon boucle infinie sur un intervalle de taille 2.
+Quel invariant faut-il auditer avant toute recherche binaire ?|Que les données sont réellement triées sur le champ recherché (monotonie). Sur des données non triées, la dichotomie renvoie un faux négatif silencieux — pas une erreur — donc le pire type de bug.
 ```
 
-</details>
-
 ---
 
-::: tip Parcours recommandé
-📖 Module terminé → Fais la **visualisation Binary Search** → puis le **Lab 04** → puis le **Quiz 04**.
-:::
+## Pont vers le lab
+
+> Lab associé : `05-algorithms/labs/lab-04-recursion-binary-search/README.md`. Implémenter `binarySearch`, `lowerBound`/`upperBound`, un `minCapacity` (binary search on answer) et un agrégat divide & conquer, avec corrigé complet + variante J+30.

@@ -1,585 +1,493 @@
-# Module 10 — Greedy, Union-Find et structures avancées
-
-> **Objectif** : maîtriser les algorithmes gloutons, comprendre Union-Find (Disjoint Set), découvrir le Trie (arbre de préfixes) et appliquer ces structures à des problèmes concrets de développement.
-
-> **Difficulté** : ⭐⭐⭐⭐
-
-::: info Pas de panique !
-Les algorithmes gloutons paraissent trop simples pour fonctionner — et parfois ils ne fonctionnent pas. L'enjeu est d'apprendre **quand** ils marchent et **comment le prouver**. Union-Find et Trie sont des structures que tu utiliseras rarement directement, mais qui apparaissent sous le capot de nombreux outils.
-:::
-
+---
+titre: Greedy, Union-Find et Trie
+cours: 05-algorithms
+notions: [algorithme glouton, propriété de choix glouton, preuve d'échange, interval scheduling, sac à dos fractionnaire, monnaie canonique, greedy vs DP, union-find/DSU, union par rang, compression de chemin, composantes connexes, détection de cycle, Kruskal, trie/arbre préfixe, autocomplétion]
+outcomes: [reconnaître quand un glouton donne l'optimum et quand il échoue, implémenter un union-find avec union par rang et compression de chemin, implémenter un trie pour l'autocomplétion, choisir entre greedy et DP]
+prerequis: [09-programmation-dynamique]
+next: 11-patterns-js-fullstack
+libs: []
+tribuzen: union-find pour regrouper les membres en communautés, trie pour l'autocomplétion de recherche, greedy pour planifier des créneaux sans chevauchement
+last-reviewed: 2026-07
 ---
 
-## Prérequis
+# Greedy, Union-Find et Trie
 
-- Module 01 (complexité)
-- Module 07 (graphes — pour Union-Find sur les composantes connexes)
-- Module 09 (DP — pour comparer greedy vs DP)
+> **Outcomes — tu sauras FAIRE :** reconnaître quand un glouton donne l'optimum et quand il échoue, implémenter un union-find (union par rang + compression de chemin), implémenter un trie pour l'autocomplétion, et trancher entre greedy et DP.
+> **Difficulté :** :star::star::star::star:
 
----
+## 1. Cas concret d'abord
 
-## 1. Algorithmes Greedy (gloutons)
+L'admin TribuZen a trois demandes le même jour, et chacune cache un algorithme de ce module.
 
-### 1.1 Principe
+**Demande A — planning d'activités.** Une famille propose 6 créneaux d'ateliers pour la même salle. Ils se chevauchent partiellement. On veut caser le **maximum** d'ateliers sans conflit de salle.
 
-```
-Un algorithme greedy fait le MEILLEUR CHOIX LOCAL à chaque étape,
-en espérant que ça mènera à une solution GLOBALEMENT optimale.
-
-Ça marche quand :
-1. Propriété de choix glouton : un choix localement optimal fait partie
-   d'une solution globalement optimale
-2. Sous-structure optimale : la solution du sous-problème est aussi optimale
-
-Ça ne marche PAS quand :
-- Le meilleur choix immédiat peut mener à un mauvais résultat global
-- Exemple : coin change avec pièces arbitraires (cf. module 09, DP nécessaire)
-```
-
-### 1.2 Greedy vs DP
-
-```
-┌────────────────────────┬─────────────────────┬─────────────────────┐
-│                        │  Greedy             │  DP                 │
-├────────────────────────┼─────────────────────┼─────────────────────┤
-│  Approche              │  Choix local opt.   │  Toutes les options │
-│  Regarde               │  Jamais en arrière  │  Sous-problèmes     │
-│  Performance           │  Souvent O(n log n) │  Souvent O(n²)      │
-│  Garantie optimale     │  Seulement si ok    │  Toujours optimale  │
-│  Implémentation        │  Simple             │  Plus complexe      │
-│  Quand l'utiliser      │  Si propriété prov. │  Quand greedy fail  │
-└────────────────────────┴─────────────────────┴─────────────────────┘
-```
-
----
-
-## 2. Problèmes Greedy classiques
-
-### 2.1 Activity Selection (intervalles sans chevauchement)
-
-```typescript
-// Maximiser le nombre d'activités non chevauchantes
-// Stratégie : trier par fin, prendre la première qui ne chevauche pas
-
-interface Activity {
-  name: string;
-  start: number;
-  end: number;
-}
-
-function maxActivities(activities: Activity[]): Activity[] {
-  // Trier par heure de fin
-  const sorted = [...activities].sort((a, b) => a.end - b.end);
-  const selected: Activity[] = [sorted[0]];
-
-  for (let i = 1; i < sorted.length; i++) {
-    const last = selected[selected.length - 1];
-    if (sorted[i].start >= last.end) {
-      selected.push(sorted[i]);
-    }
-  }
-
-  return selected;
-}
-
-const activities: Activity[] = [
-  { name: 'Meeting A', start: 1, end: 3 },
-  { name: 'Meeting B', start: 2, end: 5 },
-  { name: 'Meeting C', start: 3, end: 6 },
-  { name: 'Meeting D', start: 5, end: 7 },
-  { name: 'Meeting E', start: 6, end: 8 },
-  { name: 'Meeting F', start: 8, end: 9 },
+```ts
+// Créneaux proposés (début, fin en heures)
+const creneaux = [
+  { titre: 'Yoga',      debut: 9,  fin: 10 },
+  { titre: 'Peinture',  debut: 9,  fin: 12 },
+  { titre: 'Cuisine',   debut: 10, fin: 11 },
+  { titre: 'Musique',   debut: 11, fin: 13 },
+  { titre: 'Lecture',   debut: 12, fin: 14 },
+  { titre: 'Danse',     debut: 13, fin: 15 },
 ];
-
-console.log(maxActivities(activities).map(a => a.name));
-// ['Meeting A', 'Meeting D', 'Meeting F'] → 3 activités
+// Combien d'ateliers max sans chevauchement ? Lesquels ?
 ```
 
-### 2.2 Nombre minimum de salles de réunion
+**Demande B — communautés.** On a une liste de « liens d'amitié » entre membres. Question du produit : *combien de communautés déconnectées existe-t-il, et est-ce que Alice et Bob sont dans la même ?* Refaire un parcours de graphe à chaque question serait coûteux.
 
-```typescript
-// Combien de salles faut-il pour accueillir toutes les réunions ?
-// Stratégie : sweep line — trier les événements start/end
+**Demande C — recherche.** La barre de recherche doit proposer des familles/membres **au fur et à mesure de la frappe** : je tape `mar`, elle suggère `Martin`, `Marchand`, `Marie`. Filtrer tout le tableau à chaque touche ne passe pas à l'échelle.
 
-function minMeetingRooms(intervals: [number, number][]): number {
-  const events: [number, number][] = []; // [time, +1 pour start ou -1 pour end]
-
-  for (const [start, end] of intervals) {
-    events.push([start, 1]);
-    events.push([end, -1]);
-  }
-
-  events.sort((a, b) => a[0] - b[0] || a[1] - b[1]); // end avant start si même heure
-
-  let rooms = 0;
-  let maxRooms = 0;
-
-  for (const [, delta] of events) {
-    rooms += delta;
-    maxRooms = Math.max(maxRooms, rooms);
-  }
-
-  return maxRooms;
-}
-
-console.log(minMeetingRooms([[0, 30], [5, 10], [15, 20]])); // 2
-console.log(minMeetingRooms([[7, 10], [2, 4]]));              // 1
-```
-
-### 2.3 Fractional Knapsack (sac à dos fractionnel)
-
-```typescript
-// Contrairement au 0/1 knapsack (DP), on peut prendre des fractions d'objets
-// Greedy : trier par valeur/poids décroissant
-
-interface FracItem { name: string; weight: number; value: number }
-
-function fractionalKnapsack(items: FracItem[], capacity: number): number {
-  // Trier par ratio valeur/poids décroissant
-  const sorted = [...items].sort((a, b) =>
-    (b.value / b.weight) - (a.value / a.weight),
-  );
-
-  let totalValue = 0;
-  let remaining = capacity;
-
-  for (const item of sorted) {
-    if (remaining <= 0) break;
-    const take = Math.min(item.weight, remaining);
-    totalValue += take * (item.value / item.weight);
-    remaining -= take;
-  }
-
-  return totalValue;
-}
-
-console.log(fractionalKnapsack([
-  { name: 'Gold', weight: 10, value: 600 },    // 60/kg
-  { name: 'Silver', weight: 20, value: 500 },  // 25/kg
-  { name: 'Bronze', weight: 30, value: 400 },  // 13.3/kg
-], 50));
-// 600 + 500 + 20*13.33 = 1366.67
-```
-
-### 2.4 Huffman Encoding (preview)
-
-```typescript
-// Compression : attribuer des codes binaires courts aux caractères fréquents
-// C'est le greedy classique avec une priority queue
-
-interface HuffNode { char: string | null; freq: number; left?: HuffNode; right?: HuffNode }
-
-function huffmanCodes(text: string): Map<string, string> {
-  // Compter les fréquences
-  const freq = new Map<string, number>();
-  for (const c of text) freq.set(c, (freq.get(c) ?? 0) + 1);
-
-  // Construire les nœuds feuilles triés par fréquence
-  const nodes: HuffNode[] = [...freq.entries()]
-    .map(([char, f]) => ({ char, freq: f }))
-    .sort((a, b) => a.freq - b.freq);
-
-  // Construire l'arbre (version simplifiée sans MinHeap)
-  while (nodes.length > 1) {
-    const left = nodes.shift()!;
-    const right = nodes.shift()!;
-    const parent: HuffNode = {
-      char: null,
-      freq: left.freq + right.freq,
-      left,
-      right,
-    };
-    // Insérer au bon endroit (maintenir le tri)
-    const idx = nodes.findIndex(n => n.freq > parent.freq);
-    if (idx === -1) nodes.push(parent);
-    else nodes.splice(idx, 0, parent);
-  }
-
-  // Extraire les codes
-  const codes = new Map<string, string>();
-  function traverse(node: HuffNode, code: string) {
-    if (node.char) {
-      codes.set(node.char, code || '0');
-      return;
-    }
-    if (node.left) traverse(node.left, code + '0');
-    if (node.right) traverse(node.right, code + '1');
-  }
-
-  if (nodes[0]) traverse(nodes[0], '');
-  return codes;
-}
-
-const codes = huffmanCodes('AABBBCCCCDDDDDD');
-console.log([...codes.entries()]);
-// D (6) → code court, A (2) → code long
-```
+Trois problèmes, trois outils : un **glouton** (A), un **union-find** (B), un **trie** (C). Ce module te donne les trois — et surtout le critère pour savoir quand le glouton est légitime.
 
 ---
 
-## 3. Union-Find (Disjoint Set Union)
+## 2. Théorie complète, concise
 
-### 3.1 Concept
+### 2.1 Le principe glouton
 
+Un algorithme **glouton** (greedy) construit la solution étape par étape en prenant à chaque fois le **choix localement optimal**, sans jamais revenir en arrière.
+
+```ts
+// Squelette universel d'un glouton
+function greedy(items) {
+  const choix = trierParCritère(items); // le critère EST l'algorithme
+  const solution = [];
+  for (const item of choix) {
+    if (compatible(item, solution)) {
+      solution.push(item); // décision définitive, jamais annulée
+    }
+  }
+  return solution;
+}
 ```
-Union-Find gère des ensembles disjoints avec deux opérations :
-- find(x) : trouver le représentant du groupe de x
-- union(x, y) : fusionner les groupes de x et y
 
-Utilisation :
-- Composantes connexes dynamiques
-- Détection de cycles dans un graphe non orienté
-- Kruskal's MST (arbre couvrant minimal)
-- Groupement de données (clustering)
+Toute la difficulté tient dans **deux mots** : *localement optimal*. Rien ne garantit que cumuler des optima locaux donne l'optimum global. Le glouton est donc un **pari**, et ce pari n'est valide que sous conditions.
+
+### 2.2 Quand un glouton donne l'optimum
+
+Un glouton est prouvablement correct quand le problème a **deux propriétés** :
+
+1. **Propriété de choix glouton** — il existe une solution optimale qui contient le premier choix glouton. Autrement dit : prendre le meilleur choix local ne ferme jamais la porte à l'optimum.
+2. **Sous-structure optimale** — après avoir fixé ce choix, le problème restant est un plus petit problème de même nature, et sa solution optimale complète l'optimum global.
+
+Ces deux propriétés se démontrent classiquement par un **argument d'échange** (*exchange argument*), l'intuition à retenir :
+
+> Prends n'importe quelle solution optimale `O`. Si son premier choix diffère de celui du glouton `g`, montre que remplacer ce choix par `g` dans `O` donne une solution **au moins aussi bonne**. Donc il existe un optimum qui commence par `g`. On répète : le glouton est optimal.
+
+C'est exactement ce qui marche pour l'interval scheduling (2.3) : trier par fin la plus tôt libère le maximum de temps pour la suite — n'importe quel optimum peut être « réécrit » pour commencer par l'intervalle qui finit le plus tôt.
+
+### 2.3 Interval scheduling (sélection d'activités)
+
+Problème du cas concret A : maximiser le nombre d'intervalles deux à deux non chevauchants.
+
+```ts
+interface Creneau { titre: string; debut: number; fin: number }
+
+function selectionMax(creneaux: Creneau[]): Creneau[] {
+  // CLÉ : trier par heure de FIN croissante (pas par début, pas par durée)
+  const tries = [...creneaux].sort((a, b) => a.fin - b.fin);
+  const retenus: Creneau[] = [];
+  let finPrecedente = -Infinity;
+
+  for (const c of tries) {
+    if (c.debut >= finPrecedente) { // ne chevauche pas le dernier retenu
+      retenus.push(c);
+      finPrecedente = c.fin;
+    }
+  }
+  return retenus;
+}
 ```
 
-### 3.2 Implémentation optimisée
+Le critère « fin la plus tôt » est celui qui laisse le maximum de place au reste. Trier par début, ou par durée, casse l'optimalité (voir Pièges #1). Complexité : `O(n log n)` dominée par le tri.
 
-```typescript
+### 2.4 Sac à dos fractionnaire
+
+Le sac à dos **0/1** (module 09) est un problème de DP : on prend un objet en entier ou pas du tout. Le sac à dos **fractionnaire** autorise de prendre des fractions — et là, le glouton redevient optimal.
+
+```ts
+interface Objet { nom: string; poids: number; valeur: number }
+
+function sacFractionnaire(objets: Objet[], capacite: number): number {
+  // Trier par densité de valeur décroissante (valeur par kg)
+  const tries = [...objets].sort(
+    (a, b) => b.valeur / b.poids - a.valeur / a.poids,
+  );
+  let total = 0;
+  let reste = capacite;
+
+  for (const o of tries) {
+    if (reste <= 0) break;
+    const pris = Math.min(o.poids, reste); // fraction autorisée
+    total += pris * (o.valeur / o.poids);
+    reste -= pris;
+  }
+  return total;
+}
+```
+
+Pourquoi le glouton marche ici mais pas en 0/1 ? Parce que la **divisibilité** permet de toujours remplir exactement la capacité avec la meilleure densité disponible. En 0/1, refuser un objet peut être forcé, et un choix local trop gourmand peut bloquer un meilleur assemblage — d'où le recours au DP.
+
+### 2.5 Rendu de monnaie : canonique vs pas
+
+Rendre une somme avec le **minimum** de pièces, en prenant toujours la plus grosse pièce ≤ reste :
+
+```ts
+function renduGlouton(montant: number, pieces: number[]): number[] {
+  const tries = [...pieces].sort((a, b) => b - a);
+  const rendu: number[] = [];
+  let reste = montant;
+  for (const p of tries) {
+    while (reste >= p) { rendu.push(p); reste -= p; }
+  }
+  return rendu; // ⚠️ optimal SEULEMENT si le système est canonique
+}
+```
+
+- Système **canonique** (euros : 1, 2, 5, 10, 20, 50…) → le glouton donne toujours le minimum.
+- Système **non canonique** (ex. `[1, 3, 4]` pour rendre 6) → le glouton donne `4 + 1 + 1 = 3 pièces`, alors que `3 + 3 = 2 pièces` est mieux. Ici il faut du **DP** (module 09).
+
+La leçon : le glouton n'est correct que si on peut le **prouver** pour le système donné, pas « parce que ça a l'air de marcher sur des exemples ».
+
+### 2.6 Greedy vs DP — le tableau de décision
+
+| | Greedy | DP |
+|---|---|---|
+| Décision | Un seul choix local, définitif | Explore/combine tous les sous-problèmes |
+| Retour arrière | Jamais | Implicite via mémoïsation/tabulation |
+| Coût typique | `O(n log n)` (souvent un tri) | `O(n·W)`, `O(n²)`… |
+| Optimalité | **Seulement si prouvée** | Garantie (couvre tout l'espace) |
+| Écriture | Courte | Plus lourde (états + transitions) |
+| Exemples | interval scheduling, sac fractionnaire, Kruskal, Huffman | sac 0/1, monnaie non canonique, LCS, edit distance |
+
+**Règle pratique :** tente d'abord un glouton et cherche la preuve/contre-exemple. Si tu trouves un contre-exemple où le choix local sabote le global → passe au DP. Le DP est le filet de sécurité quand le glouton n'a pas de propriété de choix glouton.
+
+### 2.7 Union-Find (Disjoint Set Union / DSU)
+
+Structure qui gère des **ensembles disjoints** d'éléments avec deux opérations :
+
+- `find(x)` : renvoie le **représentant** (la racine) de l'ensemble de `x`.
+- `union(x, y)` : fusionne les ensembles de `x` et `y`.
+
+Deux éléments sont dans le même ensemble ssi ils ont le même représentant. Idéal pour : composantes connexes dynamiques, détection de cycle dans un graphe non orienté, algorithme de Kruskal, clustering.
+
+Deux optimisations rendent les opérations **quasi constantes** :
+
+- **Union par rang** : on accroche le petit arbre sous le grand (rang ≈ hauteur) → arbres plats.
+- **Compression de chemin** : pendant `find`, on rebranche chaque nœud visité directement sur la racine.
+
+Combinées, elles donnent une complexité amortie de `O(α(n))`, où `α` est l'inverse d'Ackermann — ≤ 4 pour toute taille physiquement concevable, donc `≈ O(1)`.
+
+```ts
 class UnionFind {
   private parent: number[];
-  private rank: number[];
-  private _count: number;
+  private rang: number[];
+  private nbEnsembles: number;
 
   constructor(n: number) {
-    this.parent = Array.from({ length: n }, (_, i) => i); // Chacun est son propre parent
-    this.rank = new Array(n).fill(0);
-    this._count = n;
+    this.parent = Array.from({ length: n }, (_, i) => i); // chacun sa racine
+    this.rang = new Array(n).fill(0);
+    this.nbEnsembles = n;
   }
 
-  // Trouver le représentant avec path compression — O(α(n)) ≈ O(1)
   find(x: number): number {
     if (this.parent[x] !== x) {
-      this.parent[x] = this.find(this.parent[x]); // ← path compression
+      this.parent[x] = this.find(this.parent[x]); // compression de chemin
     }
     return this.parent[x];
   }
 
-  // Fusionner deux groupes — O(α(n)) ≈ O(1)
   union(x: number, y: number): boolean {
-    const rootX = this.find(x);
-    const rootY = this.find(y);
+    const rx = this.find(x);
+    const ry = this.find(y);
+    if (rx === ry) return false; // déjà ensemble → aucune fusion
 
-    if (rootX === rootY) return false; // Déjà dans le même groupe
-
-    // Union by rank
-    if (this.rank[rootX] < this.rank[rootY]) {
-      this.parent[rootX] = rootY;
-    } else if (this.rank[rootX] > this.rank[rootY]) {
-      this.parent[rootY] = rootX;
+    // union par rang : le plus petit passe sous le plus grand
+    if (this.rang[rx] < this.rang[ry]) {
+      this.parent[rx] = ry;
+    } else if (this.rang[rx] > this.rang[ry]) {
+      this.parent[ry] = rx;
     } else {
-      this.parent[rootY] = rootX;
-      this.rank[rootX]++;
+      this.parent[ry] = rx;
+      this.rang[rx]++; // égalité → la racine gagnante monte d'un rang
     }
-
-    this._count--;
+    this.nbEnsembles--;
     return true;
   }
 
-  connected(x: number, y: number): boolean {
+  connectes(x: number, y: number): boolean {
     return this.find(x) === this.find(y);
   }
 
   get count(): number {
-    return this._count;
+    return this.nbEnsembles;
   }
 }
-
-const uf = new UnionFind(5);
-console.log(uf.count); // 5 composantes
-uf.union(0, 1);
-uf.union(2, 3);
-console.log(uf.count); // 3 composantes
-console.log(uf.connected(0, 1)); // true
-console.log(uf.connected(0, 2)); // false
-uf.union(1, 3);
-console.log(uf.count); // 2 composantes
-console.log(uf.connected(0, 2)); // true (via 0-1-3-2)
 ```
 
-### 3.3 Détection de cycle avec Union-Find
+### 2.8 Union-Find : détection de cycle et Kruskal
 
-```typescript
-function hasCycleUF(n: number, edges: [number, number][]): boolean {
+`union` renvoie `false` quand les deux extrémités sont déjà connectées — donc ajouter cette arête **fermerait un cycle** :
+
+```ts
+function contientCycle(n: number, aretes: [number, number][]): boolean {
   const uf = new UnionFind(n);
-
-  for (const [u, v] of edges) {
-    if (!uf.union(u, v)) return true; // Déjà connectés → cycle !
+  for (const [a, b] of aretes) {
+    if (!uf.union(a, b)) return true; // déjà connectés → cycle
   }
-
   return false;
 }
-
-console.log(hasCycleUF(4, [[0, 1], [1, 2], [2, 3]]));           // false
-console.log(hasCycleUF(4, [[0, 1], [1, 2], [2, 3], [3, 0]]));   // true
 ```
 
-### 3.4 Nombre d'îles avec Union-Find
+**Kruskal** (arbre couvrant minimal) est un glouton *appuyé sur* union-find : on trie les arêtes par poids croissant, et on ajoute chaque arête sauf si elle crée un cycle.
 
-```typescript
-function numIslandsUF(grid: string[][]): number {
-  const rows = grid.length;
-  const cols = grid[0].length;
-  const uf = new UnionFind(rows * cols);
-  let water = 0;
+```ts
+interface Arete { a: number; b: number; poids: number }
 
-  const id = (r: number, c: number) => r * cols + c;
+function kruskal(n: number, aretes: Arete[]): { total: number; mst: Arete[] } {
+  const tries = [...aretes].sort((x, y) => x.poids - y.poids); // glouton
+  const uf = new UnionFind(n);
+  const mst: Arete[] = [];
+  let total = 0;
 
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (grid[r][c] === '0') {
-        water++;
-        continue;
-      }
-      // Unifier avec les voisins droite et bas
-      if (r + 1 < rows && grid[r + 1][c] === '1') uf.union(id(r, c), id(r + 1, c));
-      if (c + 1 < cols && grid[r][c + 1] === '1') uf.union(id(r, c), id(r, c + 1));
+  for (const e of tries) {
+    if (uf.union(e.a, e.b)) {  // union réussie = pas de cycle
+      mst.push(e);
+      total += e.poids;
+      if (mst.length === n - 1) break; // un MST a n-1 arêtes
     }
   }
-
-  return uf.count - water;
+  return { total, mst };
 }
 ```
 
----
+### 2.9 Trie (arbre préfixe)
 
-## 4. Trie (arbre de préfixes)
+Un **trie** stocke des chaînes caractère par caractère. Chaque nœud a des enfants indexés par lettre ; un drapeau `estFin` marque la fin d'un mot. Le chemin racine→nœud *est* le préfixe.
 
-### 4.1 Concept
+- `insert(mot)` : `O(m)`, `m` = longueur du mot.
+- `search(mot)` : `O(m)`, vrai seulement si on atteint un nœud `estFin`.
+- `startsWith(prefixe)` : `O(m)`, vrai si le chemin existe.
+- `autocomplete(prefixe)` : `O(m + k)`, `k` = nombre de résultats collectés.
 
-```
-Un Trie stocke des chaînes caractère par caractère dans un arbre.
-Chaque chemin de la racine à un nœud marqué "fin" représente un mot.
+L'intérêt clé : le coût d'une recherche par préfixe **ne dépend pas** du nombre total de mots stockés, seulement de la longueur du préfixe — d'où son usage en autocomplétion.
 
-Exemple pour : ["cat", "car", "card", "care", "dog"]
-
-         root
-        /    \
-       c      d
-       |      |
-       a      o
-      / \     |
-     t   r    g*
-    *   / \
-       d*  e*
-
-Opérations :
-- insert(word) : O(m) où m = longueur du mot
-- search(word) : O(m)
-- startsWith(prefix) : O(m)
-- autocomplete(prefix) : O(m + k) où k = nombre de résultats
-```
-
-### 4.2 Implémentation
-
-```typescript
-class TrieNode {
-  children: Map<string, TrieNode> = new Map();
-  isEnd = false;
+```ts
+class NoeudTrie {
+  enfants = new Map<string, NoeudTrie>();
+  estFin = false;
 }
 
 class Trie {
-  private root = new TrieNode();
+  private racine = new NoeudTrie();
 
-  insert(word: string): void {
-    let node = this.root;
-    for (const char of word) {
-      if (!node.children.has(char)) {
-        node.children.set(char, new TrieNode());
+  insert(mot: string): void {
+    let noeud = this.racine;
+    for (const lettre of mot) {
+      if (!noeud.enfants.has(lettre)) {
+        noeud.enfants.set(lettre, new NoeudTrie());
       }
-      node = node.children.get(char)!;
+      noeud = noeud.enfants.get(lettre)!;
     }
-    node.isEnd = true;
+    noeud.estFin = true;
   }
 
-  search(word: string): boolean {
-    const node = this.findNode(word);
-    return node !== null && node.isEnd;
-  }
-
-  startsWith(prefix: string): boolean {
-    return this.findNode(prefix) !== null;
-  }
-
-  // Autocomplétion : tous les mots qui commencent par prefix
-  autocomplete(prefix: string, limit = 10): string[] {
-    const node = this.findNode(prefix);
-    if (!node) return [];
-
-    const results: string[] = [];
-    this.collect(node, prefix, results, limit);
-    return results;
-  }
-
-  private findNode(word: string): TrieNode | null {
-    let node = this.root;
-    for (const char of word) {
-      if (!node.children.has(char)) return null;
-      node = node.children.get(char)!;
+  private descendre(chaine: string): NoeudTrie | null {
+    let noeud = this.racine;
+    for (const lettre of chaine) {
+      const suivant = noeud.enfants.get(lettre);
+      if (!suivant) return null;
+      noeud = suivant;
     }
-    return node;
+    return noeud;
   }
 
-  private collect(node: TrieNode, prefix: string, results: string[], limit: number): void {
-    if (results.length >= limit) return;
-    if (node.isEnd) results.push(prefix);
+  search(mot: string): boolean {
+    const n = this.descendre(mot);
+    return n !== null && n.estFin;
+  }
 
-    for (const [char, child] of node.children) {
-      this.collect(child, prefix + char, results, limit);
-    }
+  startsWith(prefixe: string): boolean {
+    return this.descendre(prefixe) !== null;
+  }
+
+  autocomplete(prefixe: string, limite = 10): string[] {
+    const depart = this.descendre(prefixe);
+    if (!depart) return [];
+    const resultats: string[] = [];
+    const collecter = (noeud: NoeudTrie, acc: string) => {
+      if (resultats.length >= limite) return;
+      if (noeud.estFin) resultats.push(acc);
+      for (const [lettre, enfant] of noeud.enfants) {
+        collecter(enfant, acc + lettre);
+      }
+    };
+    collecter(depart, prefixe);
+    return resultats;
   }
 }
-
-const trie = new Trie();
-['cat', 'car', 'card', 'care', 'careful', 'dog', 'dodge', 'done'].forEach(
-  w => trie.insert(w),
-);
-
-console.log(trie.search('car'));          // true
-console.log(trie.search('ca'));           // false
-console.log(trie.startsWith('ca'));       // true
-console.log(trie.autocomplete('car'));    // ['car', 'card', 'care', 'careful']
-console.log(trie.autocomplete('do'));     // ['dog', 'dodge', 'done']
 ```
 
 ---
 
-## 5. Cas terrain
+## 3. Worked examples
 
-### 5.1 Barre de recherche avec autocomplétion
+### Exemple 1 — Le planning d'ateliers (glouton, cas concret A)
 
-```typescript
-// API endpoint pour la recherche avec Trie pré-chargé
+On déroule `selectionMax` sur les 6 créneaux.
 
-class SearchIndex {
-  private trie = new Trie();
+```ts
+// 1. Tri par FIN croissante :
+// Yoga(9-10), Cuisine(10-11), Peinture(9-12), Musique(11-13),
+// Lecture(12-14), Danse(13-15)
 
-  constructor(entries: string[]) {
-    for (const entry of entries) {
-      this.trie.insert(entry.toLowerCase());
-    }
-  }
+// 2. Balayage, finPrecedente = -Infini
+// Yoga:     debut 9  >= -Inf  → RETENU, finPrecedente = 10
+// Cuisine:  debut 10 >= 10    → RETENU, finPrecedente = 11
+// Peinture: debut 9  >= 11 ? non → rejeté (chevauche)
+// Musique:  debut 11 >= 11    → RETENU, finPrecedente = 13
+// Lecture:  debut 12 >= 13 ? non → rejeté
+// Danse:    debut 13 >= 13    → RETENU, finPrecedente = 15
 
-  suggest(query: string, limit = 5): string[] {
-    return this.trie.autocomplete(query.toLowerCase(), limit);
-  }
-}
-
-const index = new SearchIndex([
-  'JavaScript', 'Java', 'Python', 'TypeScript', 'PHP', 'Ruby',
-  'Rust', 'Go', 'Kotlin', 'Swift',
-]);
-
-console.log(index.suggest('ja'));  // ['java', 'javascript']
-console.log(index.suggest('r'));   // ['ruby', 'rust']
+// Résultat : [Yoga, Cuisine, Musique, Danse] → 4 ateliers
+console.log(selectionMax(creneaux).map(c => c.titre));
+// ['Yoga', 'Cuisine', 'Musique', 'Danse']
 ```
 
-### 5.2 Planification greedy de tâches
+Note l'usage du `>=` : un atelier qui commence pile à l'heure où le précédent finit **ne chevauche pas** (la salle se libère). Trier par début aurait retenu Peinture (9-12) en premier et bloqué la matinée → seulement 2-3 ateliers. Le critère « fin la plus tôt » est ce qui rend le glouton optimal.
 
-```typescript
-// Assigner des tâches à des workers en minimisant le temps total
-// Stratégie greedy : assigner la plus lourde tâche au worker le plus libre
+### Exemple 2 — Communautés de membres (union-find, cas concret B)
 
-function scheduleJobs(tasks: number[], numWorkers: number): number {
-  // Trier les tâches par durée décroissante
-  const sorted = [...tasks].sort((a, b) => b - a);
-  const workerLoads = new Array(numWorkers).fill(0);
+5 membres indexés 0..4. Liens d'amitié fournis. On répond aux questions du produit.
 
-  for (const task of sorted) {
-    // Trouver le worker le moins chargé
-    const minIdx = workerLoads.indexOf(Math.min(...workerLoads));
-    workerLoads[minIdx] += task;
-  }
+```ts
+const uf = new UnionFind(5); // 5 membres isolés → 5 communautés
+console.log(uf.count);              // 5
 
-  return Math.max(...workerLoads);
-}
+uf.union(0, 1); // Alice(0) — Bob(1)
+uf.union(2, 3); // Chloé(2) — David(3)
+console.log(uf.count);              // 3  (=> {0,1} {2,3} {4})
+console.log(uf.connectes(0, 1));    // true
+console.log(uf.connectes(0, 2));    // false
 
-console.log(scheduleJobs([3, 5, 7, 2, 8, 1], 3));
-// Worker 0: 8+1=9, Worker 1: 7+2=9, Worker 2: 5+3=8 → max = 9
+uf.union(1, 3); // relie les deux groupes via Bob—David
+console.log(uf.count);              // 2  (=> {0,1,2,3} {4})
+console.log(uf.connectes(0, 2));    // true  (0-1-3-2, chemin transitif)
+```
+
+Chaque `connectes(a, b)` est en `O(α(n)) ≈ O(1)` amorti — pas de re-parcours du graphe. C'est précisément ce qui rend l'union-find supérieur à un BFS/DFS quand les questions arrivent **au fil de l'eau** et que le graphe grossit.
+
+---
+
+## 4. Pièges & misconceptions
+
+### PIÈGE #1 — Trier par le mauvais critère en interval scheduling
+
+```ts
+// ❌ Trier par DÉBUT : un long intervalle qui commence tôt bloque tout
+[...creneaux].sort((a, b) => a.debut - b.debut);
+// Peinture(9-12) passe en premier et écrase Yoga+Cuisine+…
+
+// ❌ Trier par DURÉE : ne garantit rien non plus (contre-exemples faciles)
+
+// ✅ Trier par FIN croissante — le seul critère prouvé optimal
+[...creneaux].sort((a, b) => a.fin - b.fin);
+```
+
+**Pourquoi :** finir tôt maximise le temps résiduel pour les intervalles suivants. C'est l'argument d'échange de la section 2.2.
+
+### PIÈGE #2 — Croire qu'un glouton est toujours optimal
+
+```ts
+// ❌ Rendu de monnaie glouton sur un système NON canonique
+renduGlouton(6, [1, 3, 4]); // → [4, 1, 1] = 3 pièces
+// L'optimum est [3, 3] = 2 pièces. Le glouton échoue.
+```
+
+Un glouton n'est correct **que** si la propriété de choix glouton est prouvée pour ce problème précis. Sur un système de pièces arbitraire (ou le sac 0/1), il faut du DP. Ne jamais généraliser depuis « ça marche sur mes tests ».
+
+### PIÈGE #3 — Union-Find sans compression ni union par rang
+
+```ts
+// ❌ union naïve : on rattache toujours x sous y, sans rang
+union(x, y) { this.parent[this.find(x)] = this.find(y); }
+// Risque : arbres dégénérés en liste chaînée → find en O(n)
+
+// ✅ union par rang + compression → O(α(n)) ≈ O(1) amorti
+```
+
+Sans les deux optimisations, un enchaînement d'unions défavorable crée un arbre linéaire et `find` redevient `O(n)`. Les deux optimisations sont ce qui fait *tout* l'intérêt de la structure.
+
+### PIÈGE #4 — Confondre `search` et `startsWith` dans un trie
+
+```ts
+trie.insert('martin');
+trie.search('mar');      // false → 'mar' n'est pas un mot complet (pas de estFin)
+trie.startsWith('mar');  // true  → 'mar' est un préfixe existant
+```
+
+`search` exige d'atteindre un nœud `estFin`. `startsWith` (et donc l'autocomplétion) exige seulement que le chemin existe. Oublier le drapeau `estFin` fait retourner `true` à `search` pour n'importe quel préfixe — bug classique.
+
+### PIÈGE #5 — Réimplémenter un union-find quand un simple parcours suffit
+
+Union-Find brille pour des **fusions dynamiques** avec questions de connexité entrelacées. Si tu construis le graphe une fois puis comptes les composantes une seule fois, un simple DFS/BFS (module 07) est plus lisible. Choisis l'union-find quand les `union` et les `connectes` **s'alternent** dans le temps.
+
+---
+
+## 5. Ancrage TribuZen
+
+Les trois structures de ce module correspondent à trois fonctionnalités réelles du produit.
+
+**Union-Find → communautés de membres.** TribuZen relie des membres par des interactions (amitiés, co-participation à des événements). `src/services/communities.ts` maintient un `UnionFind` : chaque nouvelle relation appelle `union(idA, idB)`, et l'admin peut demander à tout moment `connectes(a, b)` ou `count` (nombre de communautés déconnectées) sans re-parcourir le graphe social. C'est le cas concret B.
+
+**Trie → autocomplétion de recherche.** La barre de recherche de familles/membres (`src/features/search/SearchIndex.ts`) charge un `Trie` avec les noms normalisés en minuscules. Chaque frappe appelle `autocomplete(query, 5)` — coût proportionnel à la longueur du préfixe, pas au nombre de familles. C'est le cas concret C.
+
+**Greedy → planification de créneaux.** Le planificateur d'activités (`src/features/planning/schedule.ts`) applique `selectionMax` pour caser le maximum d'ateliers dans une salle sans chevauchement, et un rendu de ressources glouton pour répartir des quotas canoniques. C'est le cas concret A.
+
+```
+tribuzen/src/
+  services/
+    communities.ts        // UnionFind : regroupement en communautés
+  features/
+    search/
+      SearchIndex.ts       // Trie : autocomplétion familles/membres
+    planning/
+      schedule.ts          // greedy : créneaux sans chevauchement
 ```
 
 ---
 
-## Points clés
+## 6. Points clés
 
-1. **Greedy** = meilleur choix local → espérer une solution globale optimale.
-2. Greedy marche quand on peut **prouver** la propriété de choix glouton.
-3. **Activity Selection** = trier par fin, **Meeting Rooms** = sweep line.
-4. **Union-Find** = gérer des ensembles disjoints en O(α(n)) ≈ O(1) amorti.
-5. Path compression + union by rank = les deux optimisations essentielles.
-6. **Trie** = arbre de préfixes, idéal pour autocomplétion et recherche par préfixe.
-7. Trie insert/search = O(m) où m = longueur du mot.
-8. En entretien : interval scheduling, merge intervals, Trie avec wildcards, Union-Find pour composantes.
-9. En production : scheduling de tâches, autocomplétion, filtrage IP, détection de clusters.
-
----
-
-## Pour aller plus loin
-
-- [Wikipedia — Greedy algorithms](https://en.wikipedia.org/wiki/Greedy_algorithm)
-- [VisuAlgo — Union-Find](https://visualgo.net/en/ufds)
-- [VisuAlgo — Suffixarray](https://visualgo.net/en/suffixarray) — variante avancée du Trie
-- [CP Algorithms — DSU](https://cp-algorithms.com/data_structures/disjoint_set_union.html) — Union-Find détaillé
+1. Un glouton prend le meilleur choix **local** et ne revient jamais en arrière ; c'est un pari, valide seulement si prouvé.
+2. Deux propriétés justifient un glouton : **choix glouton** (un optimum contient le premier choix local) et **sous-structure optimale** ; on les prouve par argument d'échange.
+3. Interval scheduling : **trier par fin croissante**, pas par début ni par durée.
+4. Sac fractionnaire = glouton (densité valeur/poids) ; sac 0/1 et monnaie non canonique = DP.
+5. Greedy vs DP : essaie le glouton et cherche un contre-exemple ; s'il en existe un, bascule sur le DP (garanti optimal).
+6. Union-Find gère des ensembles disjoints via `find` + `union`, en `O(α(n)) ≈ O(1)` grâce à **union par rang + compression de chemin**.
+7. `union` qui renvoie `false` = extrémités déjà connectées = cycle ; base de Kruskal (MST glouton).
+8. Trie = arbre préfixe : `insert`/`search`/`startsWith` en `O(m)`, autocomplétion en `O(m + k)`, indépendant du nombre de mots.
+9. Dans un trie, `search` exige `estFin` ; `startsWith` exige seulement que le chemin existe.
 
 ---
 
-## Si tu es perdu
+## 7. Seeds Anki
 
-1. Greedy = prendre le meilleur choix maintenant, ne jamais revenir en arrière.
-2. Si greedy ne marche pas → essayer DP.
-3. Union-Find = « est-ce que A et B sont dans le même groupe ? »
-4. Trie = arbre où chaque lettre est un nœud.
-5. Dessine la structure de données sur papier pour comprendre.
-
----
-
-## Défi
-
-> Implémente l'algorithme de Kruskal pour trouver l'arbre couvrant minimal (MST) d'un graphe pondéré non orienté. Utilise Union-Find pour vérifier que l'ajout d'une arête ne crée pas de cycle.
-
-<details>
-<summary>Réponse</summary>
-
-```typescript
-interface Edge { from: number; to: number; weight: number }
-
-function kruskal(n: number, edges: Edge[]): { mst: Edge[]; totalWeight: number } {
-  // Trier les arêtes par poids croissant (greedy)
-  const sorted = [...edges].sort((a, b) => a.weight - b.weight);
-  const uf = new UnionFind(n);
-  const mst: Edge[] = [];
-  let totalWeight = 0;
-
-  for (const edge of sorted) {
-    if (uf.union(edge.from, edge.to)) {
-      mst.push(edge);
-      totalWeight += edge.weight;
-      if (mst.length === n - 1) break; // MST a n-1 arêtes
-    }
-  }
-
-  return { mst, totalWeight };
-}
-
-const edges: Edge[] = [
-  { from: 0, to: 1, weight: 4 },
-  { from: 0, to: 2, weight: 8 },
-  { from: 1, to: 2, weight: 2 },
-  { from: 1, to: 3, weight: 5 },
-  { from: 2, to: 3, weight: 5 },
-  { from: 2, to: 4, weight: 9 },
-  { from: 3, to: 4, weight: 4 },
-];
-
-const { mst, totalWeight } = kruskal(5, edges);
-console.log(totalWeight); // 15 (arêtes: 1-2(2), 0-1(4), 3-4(4), 1-3(5))
-console.log(mst);
+```
+Quelles deux propriétés rendent un algorithme glouton optimal ?|La propriété de choix glouton (il existe un optimum contenant le premier choix local) et la sous-structure optimale (le sous-problème restant se résout de même nature). On les prouve par argument d'échange.
+Par quel critère trie-t-on en interval scheduling, et pourquoi ?|Par heure de FIN croissante. Finir au plus tôt maximise le temps résiduel pour les intervalles suivants — c'est le seul critère prouvé optimal (trier par début ou durée casse l'optimalité).
+Pourquoi le sac à dos fractionnaire est-il glouton alors que le 0/1 est du DP ?|La divisibilité permet de toujours remplir exactement la capacité avec la meilleure densité valeur/poids. En 0/1 on prend l'objet entier ou rien : un choix local trop gourmand peut bloquer un meilleur assemblage, d'où le DP.
+Quand le rendu de monnaie glouton échoue-t-il ? Donne un exemple.|Sur un système non canonique. Pour rendre 6 avec [1,3,4], le glouton donne 4+1+1 = 3 pièces alors que 3+3 = 2 pièces est optimal. Il faut du DP.
+Quelles deux optimisations donnent à l'union-find sa complexité O(alpha(n)) ?|Union par rang (accrocher le petit arbre sous le grand) et compression de chemin (rebrancher les nœuds visités directement sur la racine pendant find). Sans elles, find peut dégénérer en O(n).
+Comment détecte-t-on un cycle avec un union-find ?|En parcourant les arêtes : si union(a,b) renvoie false, c'est que a et b sont déjà connectés, donc ajouter l'arête fermerait un cycle. C'est la base du filtre de Kruskal.
+Quelle est la différence entre search et startsWith dans un trie ?|search renvoie vrai seulement si on atteint un nœud marqué estFin (mot complet). startsWith renvoie vrai dès que le chemin du préfixe existe, indépendamment de estFin. L'autocomplétion s'appuie sur startsWith.
+Quelle est la complexité des opérations d'un trie, et de quoi dépend-elle ?|insert/search/startsWith en O(m) où m = longueur du mot ; autocomplete en O(m + k) où k = nombre de résultats. Le coût ne dépend PAS du nombre total de mots stockés.
+Comment choisir entre greedy et DP ?|Tenter d'abord le glouton et chercher un contre-exemple où le choix local sabote le global. S'il n'y en a pas (propriété prouvable), garder le glouton (plus rapide, souvent O(n log n)). Sinon passer au DP, qui explore tout l'espace et garantit l'optimum.
 ```
 
-</details>
-
 ---
 
-::: tip Parcours recommandé
-📖 Module terminé → Fais le **Lab 10** (Union-Find et Trie) → puis le **Quiz 10**.
-:::
+## Pont vers le lab
+
+> Lab associé : `05-algorithms/labs/lab-10-unionfind-trie/README.md`. Implémenter un union-find (union par rang + compression), un trie d'autocomplétion, et un glouton d'intervalles — les trois briques des communautés, de la recherche et du planning TribuZen.

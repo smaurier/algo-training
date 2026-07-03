@@ -5,11 +5,22 @@ export default defineConfig({
   description: 'Algorithmie progressive pour développeurs JavaScript fullstack',
   lang: 'fr-FR',
   srcDir: '.',
-  ignoreDeadLinks: [
-    /\/quizzes\/quiz-\d{2}/,
-    /\/visualizations\//,
-    /\/labs\/lab-\d{2}/,
-  ],
+  // Refonte v1 : liens internes non bloquants (labs renumérotés) ; intégrité
+  // prereq/next enforcée par gate-course.ps1.
+  ignoreDeadLinks: true,
+
+  // Refonte v1 : le cours vit dans modules/ + labs/. cours/ (v0, archive) exclu.
+  srcExclude: ['cours/**'],
+
+  // Docs statiques : neutralise l'interpolation Vue `{{ }}` en prose.
+  vue: {
+    template: {
+      compilerOptions: {
+        delimiters: ['(%(', ')%)'],
+      },
+    },
+  },
+
   themeConfig: {
     nav: [
       { text: 'Modules', link: '/modules/00-prerequis-et-introduction' },
