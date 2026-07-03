@@ -346,6 +346,8 @@ function isValidBST(
     isValidBST(n.right, n.value, max)     // à droite : plancher = n.value
   );
 }
+// Cette validation suppose des clés strictement uniques (cohérent avec l'insert §2.6 qui
+// rejette les doublons) ; la gestion des égalités dans un BST est une question fréquente en entretien.
 
 // PLUS PROCHE ANCÊTRE COMMUN (LCA) — arbre binaire quelconque
 function lca<T>(root: TreeNode<T> | null, a: T, b: T): TreeNode<T> | null {

@@ -164,6 +164,8 @@ function partitionHoare(arr: number[], lo: number, hi: number): number {
 }
 ```
 
+> ⚠️ Avec Hoare, la récursion devient `quickSort(lo, j)` et `quickSort(j+1, hi)` — le pivot n'est PAS à sa place finale, ne pas réutiliser le `p-1` de Lomuto (sinon tri faux / boucle). (footgun classique en entretien.)
+
 **Complexité de quicksort :** $O(n \log n)$ en moyenne, mais **$O(n^2)$ dans le pire cas** — pivot toujours le plus petit/grand (typiquement Lomuto sur un tableau déjà trié). On l'atténue avec un pivot médian ou aléatoire. Quicksort est **in-place** (peu de mémoire) mais **non stable**.
 
 ### 2.4 Quickselect — le k-ième élément en $O(n)$ moyen
@@ -413,7 +415,7 @@ console.log(quickSelect(contributions, 3)); // 40
 
 // via le helper median() (gère pair/impair)
 console.log(median(contributions));          // 40
-console.log(median([50, 20, 80, 10]));       // (30+... ) → (20+50)/2 = 35
+console.log(median([50, 20, 80, 10]));       // médiane paire = (20+50)/2 = 35
 ```
 
 Déroulé de `quickSelect(contributions, 3)` (une passe typique) :

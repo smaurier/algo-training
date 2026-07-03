@@ -173,7 +173,7 @@ Avantage : performance constante quelle que soit la profondeur, et pas de saut d
 
 ### 2.6 Index inversé et fuzzy match léger
 
-Filtrer une liste avec `.filter(m => m.name.includes(q))` est O(n) à chaque frappe et rescanne toute la liste. Un **index inversé** pré-calcule `Map<terme, Set<id>>` une seule fois, puis chaque recherche est une lecture directe.
+Filtrer une liste avec `.filter(m => m.name.includes(q))` est O(n) à chaque frappe et rescanne toute la liste (n = nombre de membres). Un **index inversé** pré-calcule `Map<terme, Set<id>>` une seule fois. Un match **exact** de terme devient alors une lecture directe O(1). Mais un match **par préfixe** (le cas d'une recherche « au fil de la frappe ») oblige à scanner **tous les termes** de l'index pour tester `term.startsWith(q)` : c'est O(T) par frappe (T = nombre de termes distincts), plus économique que O(n·longueur) mais **pas** une lecture directe. Pour une vraie recherche par préfixe en O(m) (m = longueur du préfixe), il faut un **Trie** — voir §2.9 du module 10.
 
 ```ts
 type Doc = { id: string; text: string };
@@ -340,7 +340,9 @@ function buildMemberIndex(members: Member[]): Map<string, Set<string>> {
   return index;
 }
 
-// Recherche : préfixe sur les termes indexés, O(termes) et non O(membres)
+// Recherche par préfixe : on scanne TOUS les termes indexés → O(T)
+// (T = nombre de termes), pas O(membres) mais pas une lecture directe.
+// Un vrai préfixe en O(m) exige un Trie (module 10, §2.9).
 function search(index: Map<string, Set<string>>, query: string): Set<string> {
   const result = new Set<string>();
   const q = tokenize(query)[0] ?? '';
@@ -519,7 +521,7 @@ tribuzen/src/
 3. LRU cache = `Map` + réinsertion sur `get` ; le premier inséré est la victime d'éviction, en O(1).
 4. Déduplication mémorise la `Promise` en vol (et la libère à la fin) ; memoization mémorise le résultat.
 5. La pagination par curseur remplace `OFFSET` : performance constante, pas de saut de ligne.
-6. Un index inversé (`Map<terme, Set<id>>`) rend la recherche indépendante de la taille de la liste.
+6. Un index inversé (`Map<terme, Set<id>>`) rend la recherche indépendante du nombre de membres : le match exact est O(1), mais le match **par préfixe** scanne tous les termes → O(T). Pour un vrai préfixe en O(m), c'est le **Trie** du module 10 (§2.9).
 7. Fuzzy match léger = sous-séquence ordonnée, sans lib.
 8. Rate limiting : token bucket autorise des rafales ; sliding window est plus précis mais plus lourd.
 9. Retry sans backoff exponentiel + jitter aggrave les pannes (effet troupeau).

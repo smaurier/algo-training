@@ -317,6 +317,12 @@ function selectGreedy(
   return chosen;
 }
 
+// ⚠️ Ce ratio n'utilise qu'UNE dimension (le prix) alors qu'on a DEUX
+// ressources contraintes (budget + temps). Sur un sac à dos multi-dimensionnel,
+// aucun ratio 1-D n'est prouvé optimal : c'est une heuristique gloutonne
+// assumée imparfaite (le module 10 a montré que greedy n'est pas toujours
+// optimal). On l'accepte ici pour sa vitesse ; DP ci-dessous pour l'exactitude.
+
 // Version DP 0/1 knapsack sur le budget (optimal exact), prix entiers.
 function selectKnapsack(
   candidates: Array<Scored & { price: number }>,
@@ -418,8 +424,11 @@ class RecommendationEngine {
       member.monthlyMinutes,
     );
 
-    // Habillage : activité complète + explication
-    return selected
+    // Habillage : activité complète + explication.
+    // selectGreedy renvoie l'ordre de sélection (par ratio score/prix) ; on
+    // ré-ordonne par score DÉCROISSANT pour livrer une liste bien ordonnée.
+    return [...selected]
+      .sort((a, b) => b.score - a.score)
       .slice(0, k)
       .map((s) => {
         const a = this.index.byId.get(s.id)!;

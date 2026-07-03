@@ -120,7 +120,9 @@ export function buildIndex(members: Member[]): Map<string, Set<string>> {
   return index;
 }
 
-// Recherche par préfixe : on parcourt les TERMES (peu nombreux), pas les membres
+// Recherche par préfixe : on scanne TOUS les termes de l'index → O(T)
+// (T = nombre de termes), pas O(membres) mais pas une lecture directe.
+// Un vrai préfixe en O(m) exigerait un Trie (module 10, §2.9).
 export function search(index: Map<string, Set<string>>, query: string): Set<string> {
   const result = new Set<string>();
   const q = tokenize(query)[0] ?? '';

@@ -269,7 +269,7 @@ Un **trie** stocke des chaînes caractère par caractère. Chaque nœud a des en
 - `insert(mot)` : `O(m)`, `m` = longueur du mot.
 - `search(mot)` : `O(m)`, vrai seulement si on atteint un nœud `estFin`.
 - `startsWith(prefixe)` : `O(m)`, vrai si le chemin existe.
-- `autocomplete(prefixe)` : `O(m + k)`, `k` = nombre de résultats collectés.
+- `autocomplete(prefixe)` : `O(m + k)`, où `m` = longueur du préfixe et `k` = nombre de **nœuds visités** dans le sous-arbre sous le préfixe (soit `O(m + Σ|résultats|)`, la somme des longueurs des mots collectés) — pas seulement le nombre de résultats.
 
 L'intérêt clé : le coût d'une recherche par préfixe **ne dépend pas** du nombre total de mots stockés, seulement de la longueur du préfixe — d'où son usage en autocomplétion.
 

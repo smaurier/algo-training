@@ -95,7 +95,7 @@ for (const r of engine.recommendActivities('m1', 5)) {
 npx tsx exercise.ts
 ```
 
-Tu dois voir une liste d'activités pour `m1` (membre de la famille Martin, ami de m4), **jamais** `a3` (déjà rejointe), avec un score et une raison. Les activités de ses proches (a1, a8 côté m4 ; a1, a6 côté famille) doivent remonter.
+Tu dois voir une liste d'activités pour `m1` (membre de la famille Martin, ami de m4), **jamais** `a3` (déjà rejointe), avec un score et une raison. Les activités de ses proches (a1, a8 côté m4 ; a1, a6 côté famille) remontent au **scoring**. Attention : `a8` (VTT, 210 min) remonte bien au scoring mais peut être **écarté de la reco finale par le quota de temps de m1** (`monthlyMinutes`) une fois d'autres activités déjà sélectionnées — le scoring propose, la contrainte dispose.
 
 ## Étapes (en friction)
 
@@ -311,7 +311,12 @@ class RecommendationEngine {
     });
     const selected = selectGreedy(withCost, member.monthlyBudget, member.monthlyMinutes); // O(K log K)
 
-    return selected.slice(0, k).map((s) => {                   // habillage + explicabilité
+    // selectGreedy renvoie l'ordre de sélection (ratio score/prix) → on
+    // ré-ordonne par score DÉCROISSANT pour une liste finale bien ordonnée.
+    return [...selected]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, k)
+      .map((s) => {                                            // habillage + explicabilité
       const a = this.index.byId.get(s.id)!;
       const prefs = new Set(member.preferredTags);
       const matched = a.tags.filter((t) => prefs.has(t));
