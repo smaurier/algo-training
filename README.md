@@ -1,5 +1,9 @@
 # Algorithms — De débutant autonome à ingénieur pragmatique
 
+![VitePress](https://img.shields.io/badge/-VitePress-646CFF?style=flat-square&logo=vite&logoColor=white)
+![TypeScript](https://img.shields.io/badge/-TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+[![fullstack-autotraining](https://img.shields.io/badge/curriculum-fullstack--autotraining-4C1?style=flat-square)](https://github.com/smaurier/fullstack-autotraining)
+
 Formation progressive d'algorithmie pensée pour un développeur JavaScript fullstack.
 
 **Ce cours n'est PAS un cours de compétition.** L'objectif est d'apprendre les structures, raisonnements et patterns qu'un ingénieur JS recroise dans sa carrière : recherche efficace, parcours d'arbres et de graphes, caching, planification, quotas, déduplication, ranking, feeds, indexation, pagination, programmation dynamique légère, choix de structure de données.
