@@ -8,6 +8,18 @@ Formation progressive d'algorithmie pensée pour un développeur JavaScript full
 
 **Ce cours n'est PAS un cours de compétition.** L'objectif est d'apprendre les structures, raisonnements et patterns qu'un ingénieur JS recroise dans sa carrière : recherche efficace, parcours d'arbres et de graphes, caching, planification, quotas, déduplication, ranking, feeds, indexation, pagination, programmation dynamique légère, choix de structure de données.
 
+<!-- labs-gestes:start -->
+## Labs — refonte du 22/09/2026 : un lab = un geste métier complet
+
+> Règle qualité 5 du parcours : chaque lab est **un geste métier complet**, sous deux formes — **Zéro** (construire de zéro un artefact réel et entier) ou **Intervention** (modifier de l'existant avec consommateurs, findings avant code, non-régression). Un lab n'entre en file qu'avec un **oracle exécutable** (`src/` starter · `test/` · `solution/` séparée). Les labs historiques de ce cours (un concept par lab, sans oracle) restent dans `labs/` jusqu'à remplacement et **ne sont plus la file**. Cible détaillée : [`docs/gestes-complets.md`](../docs/gestes-complets.md). État : **0/2 avec oracle**.
+
+| # | Lab | Forme | Geste | Oracle |
+|---|-----|-------|-------|--------|
+| 01 | `lab-01-arbre-familial-en-graphe` | Zéro | BFS + debounce, testé | · à écrire |
+| 02 | `katas` | Fiche | complexité, hash maps, patterns JS : katas + retrieval | · à écrire |
+
+<!-- labs-gestes:end -->
+
 ## Prérequis
 
 - JavaScript courant
